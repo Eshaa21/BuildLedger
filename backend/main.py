@@ -1,19 +1,21 @@
-from fastapi import FastAPI
+from fastapi import Depends, FastAPI
 from sqlalchemy import text
 
 from backend.database import Base, engine
+from backend.dependencies import get_current_user
+from backend.models.expense import Expense
 from backend.models.user import User
 from backend.routers.auth import router as auth_router
+from backend.routers.expenses import router as expenses_router
 
-from fastapi import FastAPI, Depends
 
-from backend.dependencies import get_current_user
-from backend.models.user import User
 Base.metadata.create_all(bind=engine)
 
 app = FastAPI(title="BuildLedger")
 
 app.include_router(auth_router)
+app.include_router(expenses_router)
+
 
 @app.get("/me")
 def get_me(
@@ -24,6 +26,7 @@ def get_me(
         "name": current_user.name,
         "email": current_user.email
     }
+
 
 @app.get("/")
 def root():
