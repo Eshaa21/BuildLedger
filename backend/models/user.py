@@ -16,3 +16,9 @@ class User(Base):
         cascade="all, delete-orphan"
     )
 
+    vendors = relationship(
+        "Vendor",
+        back_populates="user",
+        cascade="all, delete-orphan"
+    )
+

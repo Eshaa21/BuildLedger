@@ -32,6 +32,7 @@ def create_expense(
 ):
     new_expense = Expense(
         user_id=current_user.id,
+        vendor_id=expense_data.vendor_id,
         expense_date=expense_data.expense_date,
         category=expense_data.category,
         description=expense_data.description,

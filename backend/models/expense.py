@@ -17,6 +17,12 @@ class Expense(Base):
         nullable=False
     )
 
+    vendor_id = Column(
+        Integer,
+        ForeignKey("vendors.id"),
+        nullable=True
+    )
+
     expense_date = Column(
         Date,
         default=date.today,
@@ -43,4 +49,12 @@ class Expense(Base):
         nullable=False
     )
 
-    user = relationship("User", back_populates="expenses")
+    user = relationship(
+        "User",
+        back_populates="expenses"
+    )
+
+    vendor = relationship(
+        "Vendor",
+        back_populates="expenses"
+    )

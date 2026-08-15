@@ -7,7 +7,8 @@ from backend.models.expense import Expense
 from backend.models.user import User
 from backend.routers.auth import router as auth_router
 from backend.routers.expenses import router as expenses_router
-
+from backend.routers.vendors import router as vendors_router
+from backend.models.vendor import Vendor
 
 Base.metadata.create_all(bind=engine)
 
@@ -15,7 +16,7 @@ app = FastAPI(title="BuildLedger")
 
 app.include_router(auth_router)
 app.include_router(expenses_router)
-
+app.include_router(vendors_router)
 
 @app.get("/me")
 def get_me(
