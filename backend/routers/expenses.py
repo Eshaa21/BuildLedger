@@ -1,11 +1,16 @@
-from fastapi import APIRouter, Depends, HTTPException
+from datetime import date
+from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.orm import Session
 
 from backend.database import get_db
 from backend.dependencies import get_current_user
 from backend.models.expense import Expense
 from backend.models.user import User
-from backend.schemas.expense import ExpenseCreate, ExpenseResponse
+from backend.schemas.expense import (
+    ExpenseCreate,
+    ExpenseResponse,
+    ExpenseUpdate
+)
 
 
 router = APIRouter(
@@ -15,14 +20,26 @@ router = APIRouter(
 
 @router.get("/", response_model=list[ExpenseResponse])
 def get_expenses(
+    category: str | None = Query(default=None),
+    expense_date: date | None = Query(default=None),
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user)
 ):
-    expenses = db.query(Expense).filter(
+    query = db.query(Expense).filter(
         Expense.user_id == current_user.id
-    ).all()
+    )
 
-    return expenses
+    if category:
+        query = query.filter(
+            Expense.category == category
+        )
+
+    if expense_date:
+        query = query.filter(
+            Expense.expense_date == expense_date
+        )
+
+    return query.all()
 
 @router.post("/", response_model=ExpenseResponse)
 def create_expense(
@@ -46,6 +63,36 @@ def create_expense(
     db.refresh(new_expense)
 
     return new_expense
+
+@router.put("/{expense_id}", response_model=ExpenseResponse)
+def update_expense(
+    expense_id: int,
+    expense_data: ExpenseUpdate,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    expense = db.query(Expense).filter(
+        Expense.id == expense_id,
+        Expense.user_id == current_user.id
+    ).first()
+
+    if not expense:
+        raise HTTPException(
+            status_code=404,
+            detail="Expense not found"
+        )
+
+    expense.expense_date = expense_data.expense_date
+    expense.category = expense_data.category
+    expense.description = expense_data.description
+    expense.paid_to = expense_data.paid_to
+    expense.vendor_id = expense_data.vendor_id
+    expense.amount = expense_data.amount
+
+    db.commit()
+    db.refresh(expense)
+
+    return expense
 
 @router.get("/{expense_id}", response_model=ExpenseResponse)
 def get_expense(
