@@ -1,6 +1,6 @@
 from fastapi import Depends, FastAPI
 from sqlalchemy import text
-
+from fastapi.middleware.cors import CORSMiddleware
 from backend.database import Base, engine
 from backend.dependencies import get_current_user
 from backend.models.expense import Expense
@@ -13,6 +13,13 @@ from backend.models.vendor import Vendor
 Base.metadata.create_all(bind=engine)
 
 app = FastAPI(title="BuildLedger")
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 app.include_router(auth_router)
 app.include_router(expenses_router)

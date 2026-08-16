@@ -43,6 +43,39 @@
 
         <hr>
 
+        <h3>Add Vendor</h3>
+
+        <form id="vendor-form">
+
+            <input
+                type="text"
+                id="vendor-name"
+                placeholder="Vendor / Person Name"
+                required
+            >
+
+            <input
+                type="text"
+                id="vendor-phone"
+                placeholder="Phone"
+            >
+
+            <input
+                type="text"
+                id="vendor-description"
+                placeholder="Description"
+            >
+
+            <button type="submit">Add Vendor</button>
+
+        </form>
+
+        <p id="vendor-message"></p>
+
+        <h3>Vendors</h3>
+
+        <div id="vendors-list"></div>
+        
         <h3>Add Expense</h3>
 
         <form id="expense-form">
@@ -67,11 +100,9 @@
                 required
             >
 
-            <input
-                type="text"
-                id="expense-paid-to"
-                placeholder="Paid To"
-            >
+            <select id="expense-vendor">
+                <option value="">No Vendor</option>
+            </select>
 
             <input
                 type="number"
