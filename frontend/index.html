@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BuildLedger</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+
+    <h1>BuildLedger</h1>
+
+    <div id="login-section">
+        <h2>Login</h2>
+
+        <form id="login-form">
+            <input
+                type="email"
+                id="login-email"
+                placeholder="Email"
+                required
+            >
+
+            <input
+                type="password"
+                id="login-password"
+                placeholder="Password"
+                required
+            >
+
+            <button type="submit">Login</button>
+        </form>
+
+        <p id="login-message"></p>
+    </div>
+
+    <div id="dashboard" style="display: none;">
+
+        <h2>Dashboard</h2>
+
+        <button id="logout-button">Logout</button>
+
+        <hr>
+
+        <h3>Add Expense</h3>
+
+        <form id="expense-form">
+
+            <input
+                type="date"
+                id="expense-date"
+                required
+            >
+
+            <input
+                type="text"
+                id="expense-category"
+                placeholder="Category"
+                required
+            >
+
+            <input
+                type="text"
+                id="expense-description"
+                placeholder="Description"
+                required
+            >
+
+            <input
+                type="text"
+                id="expense-paid-to"
+                placeholder="Paid To"
+            >
+
+            <input
+                type="number"
+                id="expense-amount"
+                placeholder="Amount"
+                step="0.01"
+                required
+            >
+
+            <button type="submit">Add Expense</button>
+
+        </form>
+
+        <p id="expense-message"></p>
+
+        <h3>Expenses</h3>
+
+        <div id="expenses-list"></div>
+
+    </div>
+
+    <script src="app.js"></script>
+
+</body>
+</html>
