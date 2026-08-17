@@ -1,5 +1,7 @@
 const API_BASE = "http://127.0.0.1:8000";
+
 let currentVendors = [];
+let currentCategories = [];
 
 const loginSection = document.getElementById("login-section");
 const dashboard = document.getElementById("dashboard");
@@ -12,11 +14,18 @@ const logoutButton = document.getElementById("logout-button");
 const AUTH_KEY = "buildledger_token";
 
 
+/* =========================
+   LOGIN
+========================= */
+
 loginForm.addEventListener("submit", async function (event) {
     event.preventDefault();
 
-    const email = document.getElementById("login-email").value;
-    const password = document.getElementById("login-password").value;
+    const email =
+        document.getElementById("login-email").value;
+
+    const password =
+        document.getElementById("login-password").value;
 
     const formData = new URLSearchParams();
 
@@ -29,7 +38,8 @@ loginForm.addEventListener("submit", async function (event) {
             {
                 method: "POST",
                 headers: {
-                    "Content-Type": "application/x-www-form-urlencoded"
+                    "Content-Type":
+                        "application/x-www-form-urlencoded"
                 },
                 body: formData
             }
@@ -58,12 +68,17 @@ loginForm.addEventListener("submit", async function (event) {
 });
 
 
+/* =========================
+   DASHBOARD
+========================= */
+
 async function showDashboard() {
     loginSection.style.display = "none";
     dashboard.style.display = "block";
 
     await loadVendors();
-    loadExpenses();
+    await loadCategories();
+    await loadExpenses();
 }
 
 
@@ -72,7 +87,13 @@ function showLogin() {
     dashboard.style.display = "none";
 }
 
+
+/* =========================
+   VENDOR NAME
+========================= */
+
 function getVendorName(vendorId) {
+
     if (!vendorId) {
         return "No Vendor";
     }
@@ -84,8 +105,15 @@ function getVendorName(vendorId) {
     return vendor ? vendor.name : "Unknown Vendor";
 }
 
+
+/* =========================
+   LOAD EXPENSES
+========================= */
+
 async function loadExpenses() {
-    const token = localStorage.getItem(AUTH_KEY);
+
+    const token =
+        localStorage.getItem(AUTH_KEY);
 
     if (!token) {
         showLogin();
@@ -93,123 +121,223 @@ async function loadExpenses() {
     }
 
     try {
+
         const response = await fetch(
             `${API_BASE}/expenses/`,
             {
                 method: "GET",
                 headers: {
-                    "Authorization": `Bearer ${token}`
+                    "Authorization":
+                        `Bearer ${token}`
                 }
             }
         );
 
         if (response.status === 401) {
+
             localStorage.removeItem(AUTH_KEY);
+
             showLogin();
+
             return;
         }
 
-        const expenses = await response.json();
+        const expenses =
+            await response.json();
 
-        const total = expenses.reduce(function (sum, expense) {
-            return sum + Number(expense.amount);
-        }, 0);
 
-        document.getElementById("total-expenses").textContent =
+        /* Calculate total */
+
+        const total =
+            expenses.reduce(function (sum, expense) {
+
+                return sum +
+                    Number(expense.amount);
+
+            }, 0);
+
+
+        document.getElementById(
+            "total-expenses"
+        ).textContent =
             total.toFixed(2);
 
-        document.getElementById("expense-count").textContent =
+
+        document.getElementById(
+            "expense-count"
+        ).textContent =
             expenses.length;
 
+
         const expensesList =
-            document.getElementById("expenses-list");
+            document.getElementById(
+                "expenses-list"
+            );
+
 
         if (expenses.length === 0) {
+
             expensesList.innerHTML =
                 "<p>No expenses found.</p>";
+
             return;
         }
 
-        expensesList.innerHTML = expenses.map(function (expense) {
-            return `
-                <div class="expense">
-                    <strong>${expense.description}</strong>
 
-                    <p>Category: ${expense.category}</p>
-                    <p>Amount: ₹${expense.amount}</p>
-                    <p>Date: ${expense.expense_date}</p>
-                    <p>Vendor: ${getVendorName(expense.vendor_id)}</p>
+        expensesList.innerHTML =
+            expenses.map(function (expense) {
 
-                    <button onclick="editExpense(${expense.id})">
-                        Edit
-                    </button>
+                return `
+                    <div class="expense">
 
-                    <button onclick="deleteExpense(${expense.id})">
-                        Delete
-                    </button>
-                </div>
-            `;
-        }).join("");
+                        <strong>
+                            ${expense.description}
+                        </strong>
+
+                        <p>
+                            Category:
+                            ${expense.category}
+                        </p>
+
+                        <p>
+                            Amount:
+                            ₹${expense.amount}
+                        </p>
+
+                        <p>
+                            Date:
+                            ${expense.expense_date}
+                        </p>
+
+                        <p>
+                            Vendor:
+                            ${getVendorName(
+                                expense.vendor_id
+                            )}
+                        </p>
+
+                        <p>
+                            Payment:
+                            ${expense.payment_method}
+                        </p>
+
+                        <button
+                            onclick="editExpense(${expense.id})"
+                        >
+                            Edit
+                        </button>
+
+                        <button
+                            onclick="deleteExpense(${expense.id})"
+                        >
+                            Delete
+                        </button>
+
+                    </div>
+                `;
+
+            }).join("");
+
 
     } catch (error) {
-        document.getElementById("expenses-list").innerHTML =
+
+        document.getElementById(
+            "expenses-list"
+        ).innerHTML =
             "<p>Unable to load expenses.</p>";
     }
 }
 
+
+/* =========================
+   DELETE EXPENSE
+========================= */
+
 async function deleteExpense(expenseId) {
-    const token = localStorage.getItem(AUTH_KEY);
+
+    const token =
+        localStorage.getItem(AUTH_KEY);
 
     if (!token) {
         showLogin();
         return;
     }
 
-    const confirmed = confirm(
-        "Are you sure you want to delete this expense?"
-    );
+    const confirmed =
+        confirm(
+            "Are you sure you want to delete this expense?"
+        );
 
     if (!confirmed) {
         return;
     }
 
     try {
+
         const response = await fetch(
             `${API_BASE}/expenses/${expenseId}`,
             {
                 method: "DELETE",
                 headers: {
-                    "Authorization": `Bearer ${token}`
+                    "Authorization":
+                        `Bearer ${token}`
                 }
             }
         );
 
-        const data = await response.json();
+        const data =
+            await response.json();
 
         if (!response.ok) {
-            alert(data.detail || "Failed to delete expense");
+
+            alert(
+                data.detail ||
+                "Failed to delete expense"
+            );
+
             return;
         }
 
         loadExpenses();
 
+
     } catch (error) {
-        alert("Unable to connect to the server");
+
+        alert(
+            "Unable to connect to the server"
+        );
     }
 }
 
+
+/* =========================
+   EDIT EXPENSE ELEMENTS
+========================= */
+
 const editExpenseSection =
-    document.getElementById("edit-expense-section");
+    document.getElementById(
+        "edit-expense-section"
+    );
 
 const editExpenseForm =
-    document.getElementById("edit-expense-form");
+    document.getElementById(
+        "edit-expense-form"
+    );
 
 const cancelEdit =
-    document.getElementById("cancel-edit");
+    document.getElementById(
+        "cancel-edit"
+    );
 
+
+/* =========================
+   EDIT EXPENSE
+========================= */
 
 function editExpense(expenseId) {
-    const token = localStorage.getItem(AUTH_KEY);
+
+    const token =
+        localStorage.getItem(AUTH_KEY);
 
     if (!token) {
         showLogin();
@@ -220,57 +348,103 @@ function editExpense(expenseId) {
 }
 
 
+/* =========================
+   LOAD EXPENSE FOR EDIT
+========================= */
+
 async function loadExpenseForEdit(expenseId) {
-    const token = localStorage.getItem(AUTH_KEY);
+
+    const token =
+        localStorage.getItem(AUTH_KEY);
 
     try {
+
         const response = await fetch(
             `${API_BASE}/expenses/${expenseId}`,
             {
                 method: "GET",
                 headers: {
-                    "Authorization": `Bearer ${token}`
+                    "Authorization":
+                        `Bearer ${token}`
                 }
             }
         );
 
-        const expense = await response.json();
+        const expense =
+            await response.json();
 
         if (!response.ok) {
+
             alert(
-                expense.detail || "Unable to load expense"
+                expense.detail ||
+                "Unable to load expense"
             );
+
             return;
         }
 
-        document.getElementById("edit-expense-id").value =
+
+        document.getElementById(
+            "edit-expense-id"
+        ).value =
             expense.id;
 
-        document.getElementById("edit-expense-date").value =
+
+        document.getElementById(
+            "edit-expense-date"
+        ).value =
             expense.expense_date;
 
-        document.getElementById("edit-expense-category").value =
-            expense.category;
 
-        document.getElementById("edit-expense-description").value =
+        /*
+        Select category using category_id
+        */
+
+        document.getElementById(
+            "edit-expense-category"
+        ).value =
+            expense.category_id || "";
+
+
+        document.getElementById(
+            "edit-expense-description"
+        ).value =
             expense.description;
 
-        document.getElementById("edit-expense-amount").value =
+
+        document.getElementById(
+            "edit-expense-amount"
+        ).value =
             expense.amount;
 
-        document.getElementById("edit-expense-vendor").value =
+
+        document.getElementById(
+            "edit-expense-vendor"
+        ).value =
             expense.vendor_id || "";
 
-        editExpenseSection.style.display = "block";
+
+        editExpenseSection.style.display =
+            "block";
+
 
         editExpenseSection.scrollIntoView({
             behavior: "smooth"
         });
 
+
     } catch (error) {
-        alert("Unable to connect to the server");
+
+        alert(
+            "Unable to connect to the server"
+        );
     }
 }
+
+
+/* =========================
+   UPDATE EXPENSE
+========================= */
 
 editExpenseForm.addEventListener(
     "submit",
@@ -278,69 +452,141 @@ editExpenseForm.addEventListener(
 
         event.preventDefault();
 
-        const token = localStorage.getItem(AUTH_KEY);
+        const token =
+            localStorage.getItem(AUTH_KEY);
+
 
         const expenseId =
-            document.getElementById("edit-expense-id").value;
+            document.getElementById(
+                "edit-expense-id"
+            ).value;
+
 
         const vendorId =
-            document.getElementById("edit-expense-vendor").value;
+            document.getElementById(
+                "edit-expense-vendor"
+            ).value;
 
-        const expenseData = {
-            expense_date:
-                document.getElementById("edit-expense-date").value,
 
-            category:
-                document.getElementById("edit-expense-category").value,
+        const categoryId =
+            document.getElementById(
+                "edit-expense-category"
+            ).value;
 
-            description:
-                document.getElementById("edit-expense-description").value,
 
-            vendor_id:
-                vendorId ? Number(vendorId) : null,
+        const selectedCategory =
+            currentCategories.find(
+                function (category) {
 
-            paid_to: null,
-
-            amount:
-                Number(
-                    document.getElementById("edit-expense-amount").value
-                )
-        };
-
-        try {
-            const response = await fetch(
-                `${API_BASE}/expenses/${expenseId}`,
-                {
-                    method: "PUT",
-                    headers: {
-                        "Content-Type": "application/json",
-                        "Authorization": `Bearer ${token}`
-                    },
-                    body: JSON.stringify(expenseData)
+                    return category.id ===
+                        Number(categoryId);
                 }
             );
 
-            const data = await response.json();
+
+        const expenseData = {
+
+            expense_date:
+                document.getElementById(
+                    "edit-expense-date"
+                ).value,
+
+
+            category:
+                selectedCategory
+                    ? selectedCategory.name
+                    : "",
+
+
+            category_id:
+                categoryId
+                    ? Number(categoryId)
+                    : null,
+
+
+            description:
+                document.getElementById(
+                    "edit-expense-description"
+                ).value,
+
+
+            vendor_id:
+                vendorId
+                    ? Number(vendorId)
+                    : null,
+
+
+            paid_to: null,
+
+
+            amount:
+                Number(
+                    document.getElementById(
+                        "edit-expense-amount"
+                    ).value
+                ),
+
+
+            payment_method:
+                "Cash"
+        };
+
+
+        try {
+
+            const response =
+                await fetch(
+                    `${API_BASE}/expenses/${expenseId}`,
+                    {
+                        method: "PUT",
+
+                        headers: {
+                            "Content-Type":
+                                "application/json",
+
+                            "Authorization":
+                                `Bearer ${token}`
+                        },
+
+                        body:
+                            JSON.stringify(
+                                expenseData
+                            )
+                    }
+                );
+
+
+            const data =
+                await response.json();
+
 
             if (!response.ok) {
+
                 document.getElementById(
                     "edit-expense-message"
                 ).textContent =
-                    data.detail || "Failed to update expense";
+                    data.detail ||
+                    "Failed to update expense";
 
                 return;
             }
+
 
             document.getElementById(
                 "edit-expense-message"
             ).textContent =
                 "Expense updated successfully.";
 
-            editExpenseSection.style.display = "none";
+
+            editExpenseSection.style.display =
+                "none";
+
 
             loadExpenses();
 
+
         } catch (error) {
+
             document.getElementById(
                 "edit-expense-message"
             ).textContent =
@@ -349,256 +595,682 @@ editExpenseForm.addEventListener(
     }
 );
 
-cancelEdit.addEventListener("click", function () {
-    editExpenseSection.style.display = "none";
-});
 
-logoutButton.addEventListener("click", function () {
-    localStorage.removeItem(AUTH_KEY);
+/* =========================
+   CANCEL EDIT
+========================= */
 
-    showLogin();
-});
+cancelEdit.addEventListener(
+    "click",
+    function () {
 
+        editExpenseSection.style.display =
+            "none";
+    }
+);
+
+
+/* =========================
+   LOGOUT
+========================= */
+
+logoutButton.addEventListener(
+    "click",
+    function () {
+
+        localStorage.removeItem(AUTH_KEY);
+
+        showLogin();
+    }
+);
+
+
+/* =========================
+   CHECK LOGIN
+========================= */
 
 if (localStorage.getItem(AUTH_KEY)) {
+
     showDashboard();
+
 } else {
+
     showLogin();
 }
 
 
-const expenseForm = document.getElementById("expense-form");
-const expenseMessage = document.getElementById("expense-message");
+/* =========================
+   ADD EXPENSE ELEMENTS
+========================= */
+
+const expenseForm =
+    document.getElementById(
+        "expense-form"
+    );
+
+const expenseMessage =
+    document.getElementById(
+        "expense-message"
+    );
 
 
-expenseForm.addEventListener("submit", async function (event) {
-    event.preventDefault();
+/* =========================
+   ADD EXPENSE
+========================= */
 
-    const token = localStorage.getItem(AUTH_KEY);
+expenseForm.addEventListener(
+    "submit",
+    async function (event) {
 
-    if (!token) {
-        showLogin();
-        return;
-    }
+        event.preventDefault();
 
-const vendorId =
-    document.getElementById("expense-vendor").value;
+        const token =
+            localStorage.getItem(AUTH_KEY);
 
-const expenseData = {
-    expense_date: document.getElementById("expense-date").value,
-    category: document.getElementById("expense-category").value,
-    description: document.getElementById("expense-description").value,
-    vendor_id: vendorId ? Number(vendorId) : null,
-    paid_to: null,
-    amount: Number(
-        document.getElementById("expense-amount").value
-    )
-};
-
-    try {
-        const response = await fetch(
-            `${API_BASE}/expenses/`,
-            {
-                method: "POST",
-                headers: {
-                    "Content-Type": "application/json",
-                    "Authorization": `Bearer ${token}`
-                },
-                body: JSON.stringify(expenseData)
-            }
-        );
-
-        const data = await response.json();
-
-        if (!response.ok) {
-            expenseMessage.textContent =
-                data.detail || "Failed to add expense";
-
-            return;
-        }
-
-        expenseMessage.textContent =
-            "Expense added successfully.";
-
-        expenseForm.reset();
-
-        loadExpenses();
-
-    } catch (error) {
-        expenseMessage.textContent =
-            "Unable to connect to the server";
-    }
-});
-
-
-const vendorForm = document.getElementById("vendor-form");
-const vendorMessage = document.getElementById("vendor-message");
-
-
-vendorForm.addEventListener("submit", async function (event) {
-    event.preventDefault();
-
-    const token = localStorage.getItem(AUTH_KEY);
-
-    if (!token) {
-        showLogin();
-        return;
-    }
-
-    const vendorData = {
-        name: document.getElementById("vendor-name").value,
-        phone: document.getElementById("vendor-phone").value || null,
-        description:
-            document.getElementById("vendor-description").value || null
-    };
-
-    try {
-        const response = await fetch(
-            `${API_BASE}/vendors/`,
-            {
-                method: "POST",
-                headers: {
-                    "Content-Type": "application/json",
-                    "Authorization": `Bearer ${token}`
-                },
-                body: JSON.stringify(vendorData)
-            }
-        );
-
-        const data = await response.json();
-
-        if (!response.ok) {
-            vendorMessage.textContent =
-                data.detail || "Failed to add vendor";
-
-            return;
-        }
-
-        vendorMessage.textContent =
-            "Vendor added successfully.";
-
-        vendorForm.reset();
-
-    } catch (error) {
-        vendorMessage.textContent =
-            "Unable to connect to the server";
-    }
-});
-
-
-async function loadVendors() {
-    const token = localStorage.getItem(AUTH_KEY);
-
-    if (!token) {
-        showLogin();
-        return;
-    }
-
-    try {
-        const response = await fetch(
-            `${API_BASE}/vendors/`,
-            {
-                method: "GET",
-                headers: {
-                    "Authorization": `Bearer ${token}`
-                }
-            }
-        );
-
-        if (response.status === 401) {
-            localStorage.removeItem(AUTH_KEY);
+        if (!token) {
             showLogin();
             return;
         }
 
-        const vendors = await response.json();
-        currentVendors = vendors;
 
-        const vendorsList =
-            document.getElementById("vendors-list");
+        const vendorId =
+            document.getElementById(
+                "expense-vendor"
+            ).value;
 
-        const vendorSelect =
-            document.getElementById("expense-vendor");
 
-        vendorSelect.innerHTML =
-            '<option value="">No Vendor</option>';
+        const categoryId =
+            document.getElementById(
+                "expense-category"
+            ).value;
 
-        vendors.forEach(function (vendor) {
-            const option = document.createElement("option");
 
-            option.value = vendor.id;
-            option.textContent = vendor.name;
+        const selectedCategory =
+            currentCategories.find(
+                function (category) {
 
-            vendorSelect.appendChild(option);
-        });
+                    return category.id ===
+                        Number(categoryId);
+                }
+            );
 
-        if (vendors.length === 0) {
-            vendorsList.innerHTML =
-                "<p>No vendors found.</p>";
+
+        const expenseData = {
+
+            expense_date:
+                document.getElementById(
+                    "expense-date"
+                ).value,
+
+
+            category:
+                selectedCategory
+                    ? selectedCategory.name
+                    : "",
+
+
+            category_id:
+                categoryId
+                    ? Number(categoryId)
+                    : null,
+
+
+            description:
+                document.getElementById(
+                    "expense-description"
+                ).value,
+
+
+            vendor_id:
+                vendorId
+                    ? Number(vendorId)
+                    : null,
+
+
+            paid_to: null,
+
+
+            amount:
+                Number(
+                    document.getElementById(
+                        "expense-amount"
+                    ).value
+                ),
+
+
+            payment_method:
+                "Cash"
+        };
+
+
+        try {
+
+            const response =
+                await fetch(
+                    `${API_BASE}/expenses/`,
+                    {
+                        method: "POST",
+
+                        headers: {
+                            "Content-Type":
+                                "application/json",
+
+                            "Authorization":
+                                `Bearer ${token}`
+                        },
+
+                        body:
+                            JSON.stringify(
+                                expenseData
+                            )
+                    }
+                );
+
+
+            const data =
+                await response.json();
+
+
+            if (!response.ok) {
+
+                expenseMessage.textContent =
+                    data.detail ||
+                    "Failed to add expense";
+
+                return;
+            }
+
+
+            expenseMessage.textContent =
+                "Expense added successfully.";
+
+
+            expenseForm.reset();
+
+
+            loadExpenses();
+
+
+        } catch (error) {
+
+            expenseMessage.textContent =
+                "Unable to connect to the server";
+        }
+    }
+);
+
+
+/* =========================
+   VENDOR FORM
+========================= */
+
+const vendorForm =
+    document.getElementById(
+        "vendor-form"
+    );
+
+const vendorMessage =
+    document.getElementById(
+        "vendor-message"
+    );
+
+
+vendorForm.addEventListener(
+    "submit",
+    async function (event) {
+
+        event.preventDefault();
+
+        const token =
+            localStorage.getItem(AUTH_KEY);
+
+        if (!token) {
+            showLogin();
             return;
         }
 
-        vendorsList.innerHTML = vendors.map(function (vendor) {
-            return `
-                <div class="expense">
-                    <strong>${vendor.name}</strong>
 
-                    <p>Phone: ${vendor.phone || "Not specified"}</p>
+        const vendorData = {
 
-                    <p>${vendor.description || ""}</p>
+            name:
+                document.getElementById(
+                    "vendor-name"
+                ).value,
 
-                    <button onclick="deleteVendor(${vendor.id})">
-                        Delete
-                    </button>
-                </div>
-            `;
-        }).join("");
 
-    } catch (error) {
-        document.getElementById("vendors-list").innerHTML =
-            "<p>Unable to load vendors.</p>";
+            phone:
+                document.getElementById(
+                    "vendor-phone"
+                ).value || null,
+
+
+            description:
+                document.getElementById(
+                    "vendor-description"
+                ).value || null
+        };
+
+
+        try {
+
+            const response =
+                await fetch(
+                    `${API_BASE}/vendors/`,
+                    {
+                        method: "POST",
+
+                        headers: {
+                            "Content-Type":
+                                "application/json",
+
+                            "Authorization":
+                                `Bearer ${token}`
+                        },
+
+                        body:
+                            JSON.stringify(
+                                vendorData
+                            )
+                    }
+                );
+
+
+            const data =
+                await response.json();
+
+
+            if (!response.ok) {
+
+                vendorMessage.textContent =
+                    data.detail ||
+                    "Failed to add vendor";
+
+                return;
+            }
+
+
+            vendorMessage.textContent =
+                "Vendor added successfully.";
+
+
+            vendorForm.reset();
+
+
+            /*
+            Refresh vendors so the
+            new vendor appears in
+            the dropdown immediately.
+            */
+
+            await loadVendors();
+
+
+        } catch (error) {
+
+            vendorMessage.textContent =
+                "Unable to connect to the server";
+        }
     }
-}
+);
 
-async function deleteVendor(vendorId) {
-    const token = localStorage.getItem(AUTH_KEY);
+
+/* =========================
+   LOAD CATEGORIES
+========================= */
+
+async function loadCategories() {
+
+    const token =
+        localStorage.getItem(AUTH_KEY);
 
     if (!token) {
         showLogin();
         return;
     }
 
-    const confirmed = confirm(
-        "Are you sure you want to delete this vendor?"
-    );
+
+    try {
+
+        const response =
+            await fetch(
+                `${API_BASE}/categories/`,
+                {
+                    method: "GET",
+
+                    headers: {
+                        "Authorization":
+                            `Bearer ${token}`
+                    }
+                }
+            );
+
+
+        if (response.status === 401) {
+
+            localStorage.removeItem(AUTH_KEY);
+
+            showLogin();
+
+            return;
+        }
+
+
+        const categories =
+            await response.json();
+
+
+        currentCategories =
+            categories;
+
+
+        const categorySelect =
+            document.getElementById(
+                "expense-category"
+            );
+
+
+        const editCategorySelect =
+            document.getElementById(
+                "edit-expense-category"
+            );
+
+
+        categorySelect.innerHTML =
+            '<option value="">Select Category</option>';
+
+
+        editCategorySelect.innerHTML =
+            '<option value="">Select Category</option>';
+
+
+        categories.forEach(
+            function (category) {
+
+                const option =
+                    document.createElement(
+                        "option"
+                    );
+
+
+                option.value =
+                    category.id;
+
+
+                option.textContent =
+                    category.name;
+
+
+                categorySelect.appendChild(
+                    option
+                );
+
+
+                const editOption =
+                    document.createElement(
+                        "option"
+                    );
+
+
+                editOption.value =
+                    category.id;
+
+
+                editOption.textContent =
+                    category.name;
+
+
+                editCategorySelect.appendChild(
+                    editOption
+                );
+            }
+        );
+
+
+    } catch (error) {
+
+        console.error(
+            "Unable to load categories:",
+            error
+        );
+    }
+}
+
+
+/* =========================
+   LOAD VENDORS
+========================= */
+
+async function loadVendors() {
+
+    const token =
+        localStorage.getItem(AUTH_KEY);
+
+    if (!token) {
+        showLogin();
+        return;
+    }
+
+
+    try {
+
+        const response =
+            await fetch(
+                `${API_BASE}/vendors/`,
+                {
+                    method: "GET",
+
+                    headers: {
+                        "Authorization":
+                            `Bearer ${token}`
+                    }
+                }
+            );
+
+
+        if (response.status === 401) {
+
+            localStorage.removeItem(AUTH_KEY);
+
+            showLogin();
+
+            return;
+        }
+
+
+        const vendors =
+            await response.json();
+
+
+        currentVendors =
+            vendors;
+
+
+        const vendorsList =
+            document.getElementById(
+                "vendors-list"
+            );
+
+
+        const vendorSelect =
+            document.getElementById(
+                "expense-vendor"
+            );
+
+
+        const editVendorSelect =
+            document.getElementById(
+                "edit-expense-vendor"
+            );
+
+
+        vendorSelect.innerHTML =
+            '<option value="">No Vendor</option>';
+
+
+        editVendorSelect.innerHTML =
+            '<option value="">No Vendor</option>';
+
+
+        vendors.forEach(
+            function (vendor) {
+
+                const option =
+                    document.createElement(
+                        "option"
+                    );
+
+
+                option.value =
+                    vendor.id;
+
+
+                option.textContent =
+                    vendor.name;
+
+
+                vendorSelect.appendChild(
+                    option
+                );
+
+
+                const editOption =
+                    document.createElement(
+                        "option"
+                    );
+
+
+                editOption.value =
+                    vendor.id;
+
+
+                editOption.textContent =
+                    vendor.name;
+
+
+                editVendorSelect.appendChild(
+                    editOption
+                );
+            }
+        );
+
+
+        if (vendors.length === 0) {
+
+            vendorsList.innerHTML =
+                "<p>No vendors found.</p>";
+
+            return;
+        }
+
+
+        vendorsList.innerHTML =
+            vendors.map(
+                function (vendor) {
+
+                    return `
+                        <div class="expense">
+
+                            <strong>
+                                ${vendor.name}
+                            </strong>
+
+                            <p>
+                                Phone:
+                                ${vendor.phone ||
+                                    "Not specified"}
+                            </p>
+
+                            <p>
+                                ${vendor.description || ""}
+                            </p>
+
+                            <button
+                                onclick="deleteVendor(${vendor.id})"
+                            >
+                                Delete
+                            </button>
+
+                        </div>
+                    `;
+
+                }
+            ).join("");
+
+
+    } catch (error) {
+
+        document.getElementById(
+            "vendors-list"
+        ).innerHTML =
+            "<p>Unable to load vendors.</p>";
+    }
+}
+
+
+/* =========================
+   DELETE VENDOR
+========================= */
+
+async function deleteVendor(vendorId) {
+
+    const token =
+        localStorage.getItem(AUTH_KEY);
+
+    if (!token) {
+        showLogin();
+        return;
+    }
+
+
+    const confirmed =
+        confirm(
+            "Are you sure you want to delete this vendor?"
+        );
+
 
     if (!confirmed) {
         return;
     }
 
-    try {
-        const response = await fetch(
-            `${API_BASE}/vendors/${vendorId}`,
-            {
-                method: "DELETE",
-                headers: {
-                    "Authorization": `Bearer ${token}`
-                }
-            }
-        );
 
-        const data = await response.json();
+    try {
+
+        const response =
+            await fetch(
+                `${API_BASE}/vendors/${vendorId}`,
+                {
+                    method: "DELETE",
+
+                    headers: {
+                        "Authorization":
+                            `Bearer ${token}`
+                    }
+                }
+            );
+
+
+        const data =
+            await response.json();
+
 
         if (!response.ok) {
+
             alert(
-                data.detail || "Failed to delete vendor"
+                data.detail ||
+                "Failed to delete vendor"
             );
+
             return;
         }
 
+
         loadVendors();
 
+
     } catch (error) {
-        alert("Unable to connect to the server");
+
+        alert(
+            "Unable to connect to the server"
+        );
     }
 }

@@ -1,4 +1,5 @@
 from datetime import date
+
 from sqlalchemy import Column, Date, Float, ForeignKey, Integer, String
 from sqlalchemy.orm import relationship
 
@@ -8,7 +9,11 @@ from backend.database import Base
 class Expense(Base):
     __tablename__ = "expenses"
 
-    id = Column(Integer, primary_key=True, index=True)
+    id = Column(
+        Integer,
+        primary_key=True,
+        index=True
+    )
 
     user_id = Column(
         Integer,
@@ -19,6 +24,12 @@ class Expense(Base):
     vendor_id = Column(
         Integer,
         ForeignKey("vendors.id"),
+        nullable=True
+    )
+
+    category_id = Column(
+        Integer,
+        ForeignKey("categories.id"),
         nullable=True
     )
 
@@ -61,5 +72,10 @@ class Expense(Base):
 
     vendor = relationship(
         "Vendor",
+        back_populates="expenses"
+    )
+
+    category_rel = relationship(
+        "Category",
         back_populates="expenses"
     )

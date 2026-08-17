@@ -16,6 +16,11 @@ class User(Base):
         cascade="all, delete-orphan"
     )
 
+    categories = relationship(
+        "Category",
+        back_populates="user"
+    )
+
     vendors = relationship(
         "Vendor",
         back_populates="user",

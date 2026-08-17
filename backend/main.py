@@ -5,10 +5,12 @@ from backend.database import Base, engine
 from backend.dependencies import get_current_user
 from backend.models.expense import Expense
 from backend.models.user import User
+from backend.models.vendor import Vendor
+from backend.models.category import Category
 from backend.routers.auth import router as auth_router
 from backend.routers.expenses import router as expenses_router
 from backend.routers.vendors import router as vendors_router
-from backend.models.vendor import Vendor
+from backend.routers.category import router as category_router
 
 Base.metadata.create_all(bind=engine)
 
@@ -24,6 +26,7 @@ app.add_middleware(
 app.include_router(auth_router)
 app.include_router(expenses_router)
 app.include_router(vendors_router)
+app.include_router(category_router)
 
 @app.get("/me")
 def get_me(
