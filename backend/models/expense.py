@@ -1,5 +1,4 @@
 from datetime import date
-
 from sqlalchemy import Column, Date, Float, ForeignKey, Integer, String
 from sqlalchemy.orm import relationship
 
@@ -47,6 +46,12 @@ class Expense(Base):
     amount = Column(
         Float,
         nullable=False
+    )
+
+    payment_method = Column(
+        String(20),
+        nullable=False,
+        default="Cash"
     )
 
     user = relationship(

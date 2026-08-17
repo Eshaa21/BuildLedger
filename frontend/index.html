@@ -120,8 +120,64 @@
 
         <h3>Expenses</h3>
 
+        <div id="expense-summary">
+            <p>Total Expenses: ₹<span id="total-expenses">0</span></p>
+            <p>Number of Expenses: <span id="expense-count">0</span></p>
+        </div>
+        
         <div id="expenses-list"></div>
 
+        <div id="edit-expense-section" style="display: none;">
+
+            <h3>Edit Expense</h3>
+
+            <form id="edit-expense-form">
+
+                <input type="hidden" id="edit-expense-id">
+
+                <input
+                    type="date"
+                    id="edit-expense-date"
+                    required
+                >
+
+                <input
+                    type="text"
+                    id="edit-expense-category"
+                    placeholder="Category"
+                    required
+                >
+
+                <input
+                    type="text"
+                    id="edit-expense-description"
+                    placeholder="Description"
+                    required
+                >
+
+                <select id="edit-expense-vendor">
+                    <option value="">No Vendor</option>
+                </select>
+
+                <input
+                    type="number"
+                    id="edit-expense-amount"
+                    placeholder="Amount"
+                    step="0.01"
+                    required
+                >
+
+                <button type="submit">Update Expense</button>
+
+                <button type="button" id="cancel-edit">
+                    Cancel
+                </button>
+
+            </form>
+
+            <p id="edit-expense-message"></p>
+
+        </div>
     </div>
 
     <script src="app.js"></script>

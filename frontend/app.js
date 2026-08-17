@@ -1,4 +1,5 @@
 const API_BASE = "http://127.0.0.1:8000";
+let currentVendors = [];
 
 const loginSection = document.getElementById("login-section");
 const dashboard = document.getElementById("dashboard");
@@ -57,12 +58,12 @@ loginForm.addEventListener("submit", async function (event) {
 });
 
 
-function showDashboard() {
+async function showDashboard() {
     loginSection.style.display = "none";
     dashboard.style.display = "block";
 
+    await loadVendors();
     loadExpenses();
-    loadVendors();
 }
 
 
@@ -71,6 +72,17 @@ function showLogin() {
     dashboard.style.display = "none";
 }
 
+function getVendorName(vendorId) {
+    if (!vendorId) {
+        return "No Vendor";
+    }
+
+    const vendor = currentVendors.find(function (vendor) {
+        return vendor.id === vendorId;
+    });
+
+    return vendor ? vendor.name : "Unknown Vendor";
+}
 
 async function loadExpenses() {
     const token = localStorage.getItem(AUTH_KEY);
@@ -99,6 +111,16 @@ async function loadExpenses() {
 
         const expenses = await response.json();
 
+        const total = expenses.reduce(function (sum, expense) {
+            return sum + Number(expense.amount);
+        }, 0);
+
+        document.getElementById("total-expenses").textContent =
+            total.toFixed(2);
+
+        document.getElementById("expense-count").textContent =
+            expenses.length;
+
         const expensesList =
             document.getElementById("expenses-list");
 
@@ -112,10 +134,19 @@ async function loadExpenses() {
             return `
                 <div class="expense">
                     <strong>${expense.description}</strong>
+
                     <p>Category: ${expense.category}</p>
                     <p>Amount: ₹${expense.amount}</p>
                     <p>Date: ${expense.expense_date}</p>
-                    <p>Vendor ID: ${expense.vendor_id || "No Vendor"}</p>
+                    <p>Vendor: ${getVendorName(expense.vendor_id)}</p>
+
+                    <button onclick="editExpense(${expense.id})">
+                        Edit
+                    </button>
+
+                    <button onclick="deleteExpense(${expense.id})">
+                        Delete
+                    </button>
                 </div>
             `;
         }).join("");
@@ -126,6 +157,201 @@ async function loadExpenses() {
     }
 }
 
+async function deleteExpense(expenseId) {
+    const token = localStorage.getItem(AUTH_KEY);
+
+    if (!token) {
+        showLogin();
+        return;
+    }
+
+    const confirmed = confirm(
+        "Are you sure you want to delete this expense?"
+    );
+
+    if (!confirmed) {
+        return;
+    }
+
+    try {
+        const response = await fetch(
+            `${API_BASE}/expenses/${expenseId}`,
+            {
+                method: "DELETE",
+                headers: {
+                    "Authorization": `Bearer ${token}`
+                }
+            }
+        );
+
+        const data = await response.json();
+
+        if (!response.ok) {
+            alert(data.detail || "Failed to delete expense");
+            return;
+        }
+
+        loadExpenses();
+
+    } catch (error) {
+        alert("Unable to connect to the server");
+    }
+}
+
+const editExpenseSection =
+    document.getElementById("edit-expense-section");
+
+const editExpenseForm =
+    document.getElementById("edit-expense-form");
+
+const cancelEdit =
+    document.getElementById("cancel-edit");
+
+
+function editExpense(expenseId) {
+    const token = localStorage.getItem(AUTH_KEY);
+
+    if (!token) {
+        showLogin();
+        return;
+    }
+
+    loadExpenseForEdit(expenseId);
+}
+
+
+async function loadExpenseForEdit(expenseId) {
+    const token = localStorage.getItem(AUTH_KEY);
+
+    try {
+        const response = await fetch(
+            `${API_BASE}/expenses/${expenseId}`,
+            {
+                method: "GET",
+                headers: {
+                    "Authorization": `Bearer ${token}`
+                }
+            }
+        );
+
+        const expense = await response.json();
+
+        if (!response.ok) {
+            alert(
+                expense.detail || "Unable to load expense"
+            );
+            return;
+        }
+
+        document.getElementById("edit-expense-id").value =
+            expense.id;
+
+        document.getElementById("edit-expense-date").value =
+            expense.expense_date;
+
+        document.getElementById("edit-expense-category").value =
+            expense.category;
+
+        document.getElementById("edit-expense-description").value =
+            expense.description;
+
+        document.getElementById("edit-expense-amount").value =
+            expense.amount;
+
+        document.getElementById("edit-expense-vendor").value =
+            expense.vendor_id || "";
+
+        editExpenseSection.style.display = "block";
+
+        editExpenseSection.scrollIntoView({
+            behavior: "smooth"
+        });
+
+    } catch (error) {
+        alert("Unable to connect to the server");
+    }
+}
+
+editExpenseForm.addEventListener(
+    "submit",
+    async function (event) {
+
+        event.preventDefault();
+
+        const token = localStorage.getItem(AUTH_KEY);
+
+        const expenseId =
+            document.getElementById("edit-expense-id").value;
+
+        const vendorId =
+            document.getElementById("edit-expense-vendor").value;
+
+        const expenseData = {
+            expense_date:
+                document.getElementById("edit-expense-date").value,
+
+            category:
+                document.getElementById("edit-expense-category").value,
+
+            description:
+                document.getElementById("edit-expense-description").value,
+
+            vendor_id:
+                vendorId ? Number(vendorId) : null,
+
+            paid_to: null,
+
+            amount:
+                Number(
+                    document.getElementById("edit-expense-amount").value
+                )
+        };
+
+        try {
+            const response = await fetch(
+                `${API_BASE}/expenses/${expenseId}`,
+                {
+                    method: "PUT",
+                    headers: {
+                        "Content-Type": "application/json",
+                        "Authorization": `Bearer ${token}`
+                    },
+                    body: JSON.stringify(expenseData)
+                }
+            );
+
+            const data = await response.json();
+
+            if (!response.ok) {
+                document.getElementById(
+                    "edit-expense-message"
+                ).textContent =
+                    data.detail || "Failed to update expense";
+
+                return;
+            }
+
+            document.getElementById(
+                "edit-expense-message"
+            ).textContent =
+                "Expense updated successfully.";
+
+            editExpenseSection.style.display = "none";
+
+            loadExpenses();
+
+        } catch (error) {
+            document.getElementById(
+                "edit-expense-message"
+            ).textContent =
+                "Unable to connect to the server";
+        }
+    }
+);
+
+cancelEdit.addEventListener("click", function () {
+    editExpenseSection.style.display = "none";
+});
 
 logoutButton.addEventListener("click", function () {
     localStorage.removeItem(AUTH_KEY);
@@ -286,6 +512,7 @@ async function loadVendors() {
         }
 
         const vendors = await response.json();
+        currentVendors = vendors;
 
         const vendorsList =
             document.getElementById("vendors-list");
@@ -315,8 +542,14 @@ async function loadVendors() {
             return `
                 <div class="expense">
                     <strong>${vendor.name}</strong>
+
                     <p>Phone: ${vendor.phone || "Not specified"}</p>
+
                     <p>${vendor.description || ""}</p>
+
+                    <button onclick="deleteVendor(${vendor.id})">
+                        Delete
+                    </button>
                 </div>
             `;
         }).join("");
@@ -324,5 +557,48 @@ async function loadVendors() {
     } catch (error) {
         document.getElementById("vendors-list").innerHTML =
             "<p>Unable to load vendors.</p>";
+    }
+}
+
+async function deleteVendor(vendorId) {
+    const token = localStorage.getItem(AUTH_KEY);
+
+    if (!token) {
+        showLogin();
+        return;
+    }
+
+    const confirmed = confirm(
+        "Are you sure you want to delete this vendor?"
+    );
+
+    if (!confirmed) {
+        return;
+    }
+
+    try {
+        const response = await fetch(
+            `${API_BASE}/vendors/${vendorId}`,
+            {
+                method: "DELETE",
+                headers: {
+                    "Authorization": `Bearer ${token}`
+                }
+            }
+        );
+
+        const data = await response.json();
+
+        if (!response.ok) {
+            alert(
+                data.detail || "Failed to delete vendor"
+            );
+            return;
+        }
+
+        loadVendors();
+
+    } catch (error) {
+        alert("Unable to connect to the server");
     }
 }

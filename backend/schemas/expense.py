@@ -8,6 +8,7 @@ class ExpenseCreate(BaseModel):
     paid_to: str | None = None
     vendor_id: int | None = None
     amount: float = Field(gt=0)
+    payment_method: str = "Cash"
 
 class ExpenseUpdate(BaseModel):
     expense_date: date
@@ -16,6 +17,7 @@ class ExpenseUpdate(BaseModel):
     paid_to: str | None = None
     vendor_id: int | None = None
     amount: float = Field(gt=0)
+    payment_method: str = "Cash"
 
 class ExpenseResponse(BaseModel):
     id: int
@@ -26,6 +28,7 @@ class ExpenseResponse(BaseModel):
     description: str
     paid_to: str | None
     amount: float
+    payment_method: str
 
     class Config:
         from_attributes = True
