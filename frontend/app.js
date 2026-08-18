@@ -19,6 +19,7 @@ const AUTH_KEY = "buildledger_token";
 ========================= */
 
 loginForm.addEventListener("submit", async function (event) {
+
     event.preventDefault();
 
     const email =
@@ -33,14 +34,17 @@ loginForm.addEventListener("submit", async function (event) {
     formData.append("password", password);
 
     try {
+
         const response = await fetch(
             `${API_BASE}/auth/login`,
             {
                 method: "POST",
+
                 headers: {
                     "Content-Type":
                         "application/x-www-form-urlencoded"
                 },
+
                 body: formData
             }
         );
@@ -48,6 +52,7 @@ loginForm.addEventListener("submit", async function (event) {
         const data = await response.json();
 
         if (!response.ok) {
+
             loginMessage.textContent =
                 data.detail || "Login failed";
 
@@ -59,9 +64,10 @@ loginForm.addEventListener("submit", async function (event) {
             data.access_token
         );
 
-        showDashboard();
+        await showDashboard();
 
     } catch (error) {
+
         loginMessage.textContent =
             "Unable to connect to the server";
     }
@@ -73,6 +79,7 @@ loginForm.addEventListener("submit", async function (event) {
 ========================= */
 
 async function showDashboard() {
+
     loginSection.style.display = "none";
     dashboard.style.display = "block";
 
@@ -83,6 +90,7 @@ async function showDashboard() {
 
 
 function showLogin() {
+
     loginSection.style.display = "block";
     dashboard.style.display = "none";
 }
@@ -98,11 +106,37 @@ function getVendorName(vendorId) {
         return "No Vendor";
     }
 
-    const vendor = currentVendors.find(function (vendor) {
-        return vendor.id === vendorId;
-    });
+    const vendor = currentVendors.find(
+        function (vendor) {
+            return vendor.id === Number(vendorId);
+        }
+    );
 
-    return vendor ? vendor.name : "Unknown Vendor";
+    return vendor
+        ? vendor.name
+        : "Unknown Vendor";
+}
+
+
+/* =========================
+   CATEGORY NAME
+========================= */
+
+function getCategoryName(categoryId, fallbackName) {
+
+    if (!categoryId) {
+        return fallbackName || "No Category";
+    }
+
+    const category = currentCategories.find(
+        function (item) {
+            return item.id === Number(categoryId);
+        }
+    );
+
+    return category
+        ? category.name
+        : (fallbackName || "Unknown Category");
 }
 
 
@@ -126,6 +160,7 @@ async function loadExpenses() {
             `${API_BASE}/expenses/`,
             {
                 method: "GET",
+
                 headers: {
                     "Authorization":
                         `Bearer ${token}`
@@ -142,6 +177,16 @@ async function loadExpenses() {
             return;
         }
 
+        if (!response.ok) {
+
+            document.getElementById(
+                "expenses-list"
+            ).innerHTML =
+                "<p>Unable to load expenses.</p>";
+
+            return;
+        }
+
         const expenses =
             await response.json();
 
@@ -149,12 +194,15 @@ async function loadExpenses() {
         /* Calculate total */
 
         const total =
-            expenses.reduce(function (sum, expense) {
+            expenses.reduce(
+                function (sum, expense) {
 
-                return sum +
-                    Number(expense.amount);
+                    return sum +
+                        Number(expense.amount);
 
-            }, 0);
+                },
+                0
+            );
 
 
         document.getElementById(
@@ -185,61 +233,83 @@ async function loadExpenses() {
 
 
         expensesList.innerHTML =
-            expenses.map(function (expense) {
+            expenses.map(
+                function (expense) {
 
-                return `
-                    <div class="expense">
+                    const categoryName =
+                        getCategoryName(
+                            expense.category_id,
+                            expense.category
+                        );
 
-                        <strong>
-                            ${expense.description}
-                        </strong>
+                    const vendorName =
+                        getVendorName(
+                            expense.vendor_id
+                        );
 
-                        <p>
-                            Category:
-                            ${expense.category}
-                        </p>
+                    const paymentMethod =
+                        expense.payment_method ||
+                        "Cash";
 
-                        <p>
-                            Amount:
-                            ₹${expense.amount}
-                        </p>
 
-                        <p>
-                            Date:
-                            ${expense.expense_date}
-                        </p>
+                    return `
+                        <div class="expense">
 
-                        <p>
-                            Vendor:
-                            ${getVendorName(
-                                expense.vendor_id
-                            )}
-                        </p>
+                            <strong>
+                                ${expense.description}
+                            </strong>
 
-                        <p>
-                            Payment:
-                            ${expense.payment_method}
-                        </p>
+                            <p>
+                                Category:
+                                ${categoryName}
+                            </p>
 
-                        <button
-                            onclick="editExpense(${expense.id})"
-                        >
-                            Edit
-                        </button>
+                            <p>
+                                Amount:
+                                ₹${Number(
+                                    expense.amount
+                                ).toFixed(2)}
+                            </p>
 
-                        <button
-                            onclick="deleteExpense(${expense.id})"
-                        >
-                            Delete
-                        </button>
+                            <p>
+                                Date:
+                                ${expense.expense_date}
+                            </p>
 
-                    </div>
-                `;
+                            <p>
+                                Vendor:
+                                ${vendorName}
+                            </p>
 
-            }).join("");
+                            <p>
+                                Payment:
+                                ${paymentMethod}
+                            </p>
+
+                            <button
+                                onclick="editExpense(${expense.id})"
+                            >
+                                Edit
+                            </button>
+
+                            <button
+                                onclick="deleteExpense(${expense.id})"
+                            >
+                                Delete
+                            </button>
+
+                        </div>
+                    `;
+                }
+            ).join("");
 
 
     } catch (error) {
+
+        console.error(
+            "Unable to load expenses:",
+            error
+        );
 
         document.getElementById(
             "expenses-list"
@@ -278,6 +348,7 @@ async function deleteExpense(expenseId) {
             `${API_BASE}/expenses/${expenseId}`,
             {
                 method: "DELETE",
+
                 headers: {
                     "Authorization":
                         `Bearer ${token}`
@@ -298,7 +369,7 @@ async function deleteExpense(expenseId) {
             return;
         }
 
-        loadExpenses();
+        await loadExpenses();
 
 
     } catch (error) {
@@ -363,6 +434,7 @@ async function loadExpenseForEdit(expenseId) {
             `${API_BASE}/expenses/${expenseId}`,
             {
                 method: "GET",
+
                 headers: {
                     "Authorization":
                         `Bearer ${token}`
@@ -397,8 +469,8 @@ async function loadExpenseForEdit(expenseId) {
 
 
         /*
-        Select category using category_id
-        */
+         * Select category using category_id
+         */
 
         document.getElementById(
             "edit-expense-category"
@@ -422,6 +494,22 @@ async function loadExpenseForEdit(expenseId) {
             "edit-expense-vendor"
         ).value =
             expense.vendor_id || "";
+
+
+        /*
+         * Select payment method
+         */
+
+        const editPaymentMethod =
+            document.getElementById(
+                "edit-expense-payment-method"
+            );
+
+        if (editPaymentMethod) {
+
+            editPaymentMethod.value =
+                expense.payment_method || "Cash";
+        }
 
 
         editExpenseSection.style.display =
@@ -474,6 +562,12 @@ editExpenseForm.addEventListener(
             ).value;
 
 
+        const paymentMethod =
+            document.getElementById(
+                "edit-expense-payment-method"
+            ).value;
+
+
         const selectedCategory =
             currentCategories.find(
                 function (category) {
@@ -482,6 +576,37 @@ editExpenseForm.addEventListener(
                         Number(categoryId);
                 }
             );
+
+
+        /*
+         * Category must come from the
+         * selected category.
+         */
+
+        if (!categoryId || !selectedCategory) {
+
+            document.getElementById(
+                "edit-expense-message"
+            ).textContent =
+                "Please select a valid category.";
+
+            return;
+        }
+
+
+        /*
+         * Payment method must be selected.
+         */
+
+        if (!paymentMethod) {
+
+            document.getElementById(
+                "edit-expense-message"
+            ).textContent =
+                "Please select a payment method.";
+
+            return;
+        }
 
 
         const expenseData = {
@@ -493,15 +618,11 @@ editExpenseForm.addEventListener(
 
 
             category:
-                selectedCategory
-                    ? selectedCategory.name
-                    : "",
+                selectedCategory.name,
 
 
             category_id:
-                categoryId
-                    ? Number(categoryId)
-                    : null,
+                Number(categoryId),
 
 
             description:
@@ -516,7 +637,8 @@ editExpenseForm.addEventListener(
                     : null,
 
 
-            paid_to: null,
+            paid_to:
+                null,
 
 
             amount:
@@ -528,7 +650,7 @@ editExpenseForm.addEventListener(
 
 
             payment_method:
-                "Cash"
+                paymentMethod
         };
 
 
@@ -541,6 +663,7 @@ editExpenseForm.addEventListener(
                         method: "PUT",
 
                         headers: {
+
                             "Content-Type":
                                 "application/json",
 
@@ -582,7 +705,7 @@ editExpenseForm.addEventListener(
                 "none";
 
 
-            loadExpenses();
+            await loadExpenses();
 
 
         } catch (error) {
@@ -623,20 +746,6 @@ logoutButton.addEventListener(
         showLogin();
     }
 );
-
-
-/* =========================
-   CHECK LOGIN
-========================= */
-
-if (localStorage.getItem(AUTH_KEY)) {
-
-    showDashboard();
-
-} else {
-
-    showLogin();
-}
 
 
 /* =========================
@@ -685,6 +794,12 @@ expenseForm.addEventListener(
             ).value;
 
 
+        const paymentMethod =
+            document.getElementById(
+                "expense-payment-method"
+            ).value;
+
+
         const selectedCategory =
             currentCategories.find(
                 function (category) {
@@ -693,6 +808,49 @@ expenseForm.addEventListener(
                         Number(categoryId);
                 }
             );
+
+
+        /*
+         * Category validation
+         */
+
+        if (!categoryId || !selectedCategory) {
+
+            expenseMessage.textContent =
+                "Please select a valid category.";
+
+            return;
+        }
+
+
+        /*
+         * Payment method validation
+         */
+
+        if (!paymentMethod) {
+
+            expenseMessage.textContent =
+                "Please select a payment method.";
+
+            return;
+        }
+
+
+        const amount =
+            Number(
+                document.getElementById(
+                    "expense-amount"
+                ).value
+            );
+
+
+        if (amount <= 0) {
+
+            expenseMessage.textContent =
+                "Amount must be greater than 0.";
+
+            return;
+        }
 
 
         const expenseData = {
@@ -704,15 +862,11 @@ expenseForm.addEventListener(
 
 
             category:
-                selectedCategory
-                    ? selectedCategory.name
-                    : "",
+                selectedCategory.name,
 
 
             category_id:
-                categoryId
-                    ? Number(categoryId)
-                    : null,
+                Number(categoryId),
 
 
             description:
@@ -727,19 +881,16 @@ expenseForm.addEventListener(
                     : null,
 
 
-            paid_to: null,
+            paid_to:
+                null,
 
 
             amount:
-                Number(
-                    document.getElementById(
-                        "expense-amount"
-                    ).value
-                ),
+                amount,
 
 
             payment_method:
-                "Cash"
+                paymentMethod
         };
 
 
@@ -752,6 +903,7 @@ expenseForm.addEventListener(
                         method: "POST",
 
                         headers: {
+
                             "Content-Type":
                                 "application/json",
 
@@ -788,7 +940,21 @@ expenseForm.addEventListener(
             expenseForm.reset();
 
 
-            loadExpenses();
+            /*
+             * Restore default option
+             */
+
+            document.getElementById(
+                "expense-category"
+            ).value = "";
+
+
+            document.getElementById(
+                "expense-payment-method"
+            ).value = "";
+
+
+            await loadExpenses();
 
 
         } catch (error) {
@@ -860,6 +1026,7 @@ vendorForm.addEventListener(
                         method: "POST",
 
                         headers: {
+
                             "Content-Type":
                                 "application/json",
 
@@ -895,12 +1062,6 @@ vendorForm.addEventListener(
 
             vendorForm.reset();
 
-
-            /*
-            Refresh vendors so the
-            new vendor appears in
-            the dropdown immediately.
-            */
 
             await loadVendors();
 
@@ -955,6 +1116,16 @@ async function loadCategories() {
         }
 
 
+        if (!response.ok) {
+
+            console.error(
+                "Failed to load categories"
+            );
+
+            return;
+        }
+
+
         const categories =
             await response.json();
 
@@ -986,38 +1157,40 @@ async function loadCategories() {
         categories.forEach(
             function (category) {
 
+                /*
+                 * Add category to Add Expense
+                 */
+
                 const option =
                     document.createElement(
                         "option"
                     );
 
-
                 option.value =
                     category.id;
 
-
                 option.textContent =
                     category.name;
-
 
                 categorySelect.appendChild(
                     option
                 );
 
 
+                /*
+                 * Add category to Edit Expense
+                 */
+
                 const editOption =
                     document.createElement(
                         "option"
                     );
 
-
                 editOption.value =
                     category.id;
 
-
                 editOption.textContent =
                     category.name;
-
 
                 editCategorySelect.appendChild(
                     editOption
@@ -1077,6 +1250,16 @@ async function loadVendors() {
         }
 
 
+        if (!response.ok) {
+
+            console.error(
+                "Failed to load vendors"
+            );
+
+            return;
+        }
+
+
         const vendors =
             await response.json();
 
@@ -1114,38 +1297,40 @@ async function loadVendors() {
         vendors.forEach(
             function (vendor) {
 
+                /*
+                 * Add vendor to Add Expense
+                 */
+
                 const option =
                     document.createElement(
                         "option"
                     );
 
-
                 option.value =
                     vendor.id;
 
-
                 option.textContent =
                     vendor.name;
-
 
                 vendorSelect.appendChild(
                     option
                 );
 
 
+                /*
+                 * Add vendor to Edit Expense
+                 */
+
                 const editOption =
                     document.createElement(
                         "option"
                     );
 
-
                 editOption.value =
                     vendor.id;
 
-
                 editOption.textContent =
                     vendor.name;
-
 
                 editVendorSelect.appendChild(
                     editOption
@@ -1181,7 +1366,8 @@ async function loadVendors() {
                             </p>
 
                             <p>
-                                ${vendor.description || ""}
+                                ${vendor.description ||
+                                    ""}
                             </p>
 
                             <button
@@ -1192,12 +1378,16 @@ async function loadVendors() {
 
                         </div>
                     `;
-
                 }
             ).join("");
 
 
     } catch (error) {
+
+        console.error(
+            "Unable to load vendors:",
+            error
+        );
 
         document.getElementById(
             "vendors-list"
@@ -1264,7 +1454,15 @@ async function deleteVendor(vendorId) {
         }
 
 
-        loadVendors();
+        await loadVendors();
+
+
+        /*
+         * Refresh expenses because
+         * vendor information may have changed.
+         */
+
+        await loadExpenses();
 
 
     } catch (error) {
@@ -1273,4 +1471,18 @@ async function deleteVendor(vendorId) {
             "Unable to connect to the server"
         );
     }
+}
+
+
+/* =========================
+   INITIAL LOGIN CHECK
+========================= */
+
+if (localStorage.getItem(AUTH_KEY)) {
+
+    showDashboard();
+
+} else {
+
+    showLogin();
 }
