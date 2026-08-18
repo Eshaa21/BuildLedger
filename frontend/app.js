@@ -2,6 +2,14 @@ const API_BASE = "http://127.0.0.1:8000";
 
 let currentVendors = [];
 let currentCategories = [];
+let currentExpenses = [];
+
+const AUTH_KEY = "buildledger_token";
+
+
+// =====================================================
+// ELEMENTS
+// =====================================================
 
 const loginSection = document.getElementById("login-section");
 const dashboard = document.getElementById("dashboard");
@@ -11,12 +19,10 @@ const loginMessage = document.getElementById("login-message");
 
 const logoutButton = document.getElementById("logout-button");
 
-const AUTH_KEY = "buildledger_token";
 
-
-/* =========================
-   LOGIN
-========================= */
+// =====================================================
+// LOGIN
+// =====================================================
 
 loginForm.addEventListener("submit", async function (event) {
 
@@ -64,7 +70,9 @@ loginForm.addEventListener("submit", async function (event) {
             data.access_token
         );
 
-        await showDashboard();
+        loginMessage.textContent = "";
+
+        showDashboard();
 
     } catch (error) {
 
@@ -74,9 +82,9 @@ loginForm.addEventListener("submit", async function (event) {
 });
 
 
-/* =========================
-   DASHBOARD
-========================= */
+// =====================================================
+// SHOW DASHBOARD
+// =====================================================
 
 async function showDashboard() {
 
@@ -89,6 +97,10 @@ async function showDashboard() {
 }
 
 
+// =====================================================
+// SHOW LOGIN
+// =====================================================
+
 function showLogin() {
 
     loginSection.style.display = "block";
@@ -96,9 +108,19 @@ function showLogin() {
 }
 
 
-/* =========================
-   VENDOR NAME
-========================= */
+// =====================================================
+// GET TOKEN
+// =====================================================
+
+function getToken() {
+
+    return localStorage.getItem(AUTH_KEY);
+}
+
+
+// =====================================================
+// GET VENDOR NAME
+// =====================================================
 
 function getVendorName(vendorId) {
 
@@ -108,7 +130,7 @@ function getVendorName(vendorId) {
 
     const vendor = currentVendors.find(
         function (vendor) {
-            return vendor.id === Number(vendorId);
+            return vendor.id === vendorId;
         }
     );
 
@@ -118,38 +140,213 @@ function getVendorName(vendorId) {
 }
 
 
-/* =========================
-   CATEGORY NAME
-========================= */
+// =====================================================
+// GET CATEGORY NAME
+// =====================================================
 
-function getCategoryName(categoryId, fallbackName) {
+function getCategoryName(categoryId) {
 
     if (!categoryId) {
-        return fallbackName || "No Category";
+        return "Unknown";
     }
 
     const category = currentCategories.find(
         function (item) {
-            return item.id === Number(categoryId);
+            return item.id === categoryId;
         }
     );
 
     return category
         ? category.name
-        : (fallbackName || "Unknown Category");
+        : "Unknown";
 }
 
 
-/* =========================
-   LOAD EXPENSES
-========================= */
+// =====================================================
+// METRICS
+// =====================================================
+
+function updateMetrics(expenses) {
+
+    let totalAmount = 0;
+    let totalPhonePe = 0;
+    let totalCash = 0;
+    let totalPending = 0;
+    let totalPetrol = 0;
+
+    expenses.forEach(function (expense) {
+
+        const amount = Number(expense.amount) || 0;
+
+        totalAmount += amount;
+
+        const paymentMethod =
+            String(expense.payment_method || "")
+                .trim()
+                .toLowerCase();
+
+        if (paymentMethod === "phonepe") {
+
+            totalPhonePe += amount;
+
+        } else if (paymentMethod === "cash") {
+
+            totalCash += amount;
+
+        } else if (paymentMethod === "pending") {
+
+            totalPending += amount;
+        }
+
+
+        // Petrol category
+        const categoryName =
+            String(expense.category || "")
+                .trim()
+                .toLowerCase();
+
+        if (categoryName === "petrol") {
+
+            totalPetrol += amount;
+        }
+    });
+
+
+    // Total amount
+    const totalElement =
+        document.getElementById(
+            "metric-total-amount"
+        );
+
+    if (totalElement) {
+
+        totalElement.textContent =
+            totalAmount.toFixed(2);
+    }
+
+
+    // PhonePe
+    const phonePeElement =
+        document.getElementById(
+            "metric-phonepe"
+        );
+
+    if (phonePeElement) {
+
+        phonePeElement.textContent =
+            totalPhonePe.toFixed(2);
+    }
+
+
+    // Cash
+    const cashElement =
+        document.getElementById(
+            "metric-cash"
+        );
+
+    if (cashElement) {
+
+        cashElement.textContent =
+            totalCash.toFixed(2);
+    }
+
+
+    // Pending
+    const pendingElement =
+        document.getElementById(
+            "metric-pending"
+        );
+
+    if (pendingElement) {
+
+        pendingElement.textContent =
+            totalPending.toFixed(2);
+    }
+
+
+    // Petrol
+    const petrolElement =
+        document.getElementById(
+            "metric-petrol"
+        );
+
+    if (petrolElement) {
+
+        petrolElement.textContent =
+            totalPetrol.toFixed(2);
+    }
+
+
+    // Update selected category total
+    updateCategoryMetric();
+}
+
+
+// =====================================================
+// CATEGORY METRIC
+// =====================================================
+
+function updateCategoryMetric() {
+
+    const select =
+        document.getElementById(
+            "metric-category-select"
+        );
+
+    const totalElement =
+        document.getElementById(
+            "metric-category-total"
+        );
+
+    if (!select || !totalElement) {
+        return;
+    }
+
+    const selectedCategoryId =
+        select.value;
+
+    if (!selectedCategoryId) {
+
+        totalElement.textContent =
+            "0.00";
+
+        return;
+    }
+
+    const categoryId =
+        Number(selectedCategoryId);
+
+    let total = 0;
+
+    currentExpenses.forEach(
+        function (expense) {
+
+            if (
+                Number(expense.category_id) ===
+                categoryId
+            ) {
+
+                total +=
+                    Number(expense.amount) || 0;
+            }
+        }
+    );
+
+    totalElement.textContent =
+        total.toFixed(2);
+}
+
+
+// =====================================================
+// LOAD EXPENSES
+// =====================================================
 
 async function loadExpenses() {
 
-    const token =
-        localStorage.getItem(AUTH_KEY);
+    const token = getToken();
 
     if (!token) {
+
         showLogin();
         return;
     }
@@ -168,6 +365,7 @@ async function loadExpenses() {
             }
         );
 
+
         if (response.status === 401) {
 
             localStorage.removeItem(AUTH_KEY);
@@ -177,131 +375,31 @@ async function loadExpenses() {
             return;
         }
 
+
         if (!response.ok) {
 
-            document.getElementById(
-                "expenses-list"
-            ).innerHTML =
-                "<p>Unable to load expenses.</p>";
-
-            return;
+            throw new Error(
+                "Unable to load expenses"
+            );
         }
+
 
         const expenses =
             await response.json();
 
-
-        /* Calculate total */
-
-        const total =
-            expenses.reduce(
-                function (sum, expense) {
-
-                    return sum +
-                        Number(expense.amount);
-
-                },
-                0
-            );
+        currentExpenses = expenses;
 
 
-        document.getElementById(
-            "total-expenses"
-        ).textContent =
-            total.toFixed(2);
+        // Update all metric cards
+        updateMetrics(expenses);
 
 
-        document.getElementById(
-            "expense-count"
-        ).textContent =
-            expenses.length;
+        // Update normal summary
+        updateExpenseSummary(expenses);
 
 
-        const expensesList =
-            document.getElementById(
-                "expenses-list"
-            );
-
-
-        if (expenses.length === 0) {
-
-            expensesList.innerHTML =
-                "<p>No expenses found.</p>";
-
-            return;
-        }
-
-
-        expensesList.innerHTML =
-            expenses.map(
-                function (expense) {
-
-                    const categoryName =
-                        getCategoryName(
-                            expense.category_id,
-                            expense.category
-                        );
-
-                    const vendorName =
-                        getVendorName(
-                            expense.vendor_id
-                        );
-
-                    const paymentMethod =
-                        expense.payment_method ||
-                        "Cash";
-
-
-                    return `
-                        <div class="expense">
-
-                            <strong>
-                                ${expense.description}
-                            </strong>
-
-                            <p>
-                                Category:
-                                ${categoryName}
-                            </p>
-
-                            <p>
-                                Amount:
-                                ₹${Number(
-                                    expense.amount
-                                ).toFixed(2)}
-                            </p>
-
-                            <p>
-                                Date:
-                                ${expense.expense_date}
-                            </p>
-
-                            <p>
-                                Vendor:
-                                ${vendorName}
-                            </p>
-
-                            <p>
-                                Payment:
-                                ${paymentMethod}
-                            </p>
-
-                            <button
-                                onclick="editExpense(${expense.id})"
-                            >
-                                Edit
-                            </button>
-
-                            <button
-                                onclick="deleteExpense(${expense.id})"
-                            >
-                                Delete
-                            </button>
-
-                        </div>
-                    `;
-                }
-            ).join("");
+        // Display expenses
+        displayExpenses(expenses);
 
 
     } catch (error) {
@@ -311,53 +409,260 @@ async function loadExpenses() {
             error
         );
 
-        document.getElementById(
-            "expenses-list"
-        ).innerHTML =
-            "<p>Unable to load expenses.</p>";
+        const expensesList =
+            document.getElementById(
+                "expenses-list"
+            );
+
+        if (expensesList) {
+
+            expensesList.innerHTML =
+                "<p>Unable to load expenses.</p>";
+        }
     }
 }
 
 
-/* =========================
-   DELETE EXPENSE
-========================= */
+// =====================================================
+// EXPENSE SUMMARY
+// =====================================================
+
+function updateExpenseSummary(expenses) {
+
+    let total = 0;
+
+    expenses.forEach(
+        function (expense) {
+
+            total +=
+                Number(expense.amount) || 0;
+        }
+    );
+
+
+    const totalElement =
+        document.getElementById(
+            "total-expenses"
+        );
+
+    const countElement =
+        document.getElementById(
+            "expense-count"
+        );
+
+
+    if (totalElement) {
+
+        totalElement.textContent =
+            total.toFixed(2);
+    }
+
+
+    if (countElement) {
+
+        countElement.textContent =
+            expenses.length;
+    }
+}
+
+
+// =====================================================
+// DISPLAY EXPENSES
+// =====================================================
+
+function displayExpenses(expenses) {
+
+    const expensesList =
+        document.getElementById(
+            "expenses-list"
+        );
+
+    if (!expensesList) {
+        return;
+    }
+
+
+    // Category filter
+    const filter =
+        document.getElementById(
+            "expense-filter-category"
+        );
+
+    let filteredExpenses = expenses;
+
+
+    if (filter && filter.value) {
+
+        const selectedCategoryId =
+            Number(filter.value);
+
+        filteredExpenses =
+            expenses.filter(
+                function (expense) {
+
+                    return Number(
+                        expense.category_id
+                    ) === selectedCategoryId;
+                }
+            );
+    }
+
+
+    if (filteredExpenses.length === 0) {
+
+        expensesList.innerHTML =
+            "<p>No expenses found.</p>";
+
+        return;
+    }
+
+
+    expensesList.innerHTML =
+        filteredExpenses.map(
+            function (expense) {
+
+                return `
+                    <div class="expense">
+
+                        <strong>
+                            ${expense.description}
+                        </strong>
+
+                        <p>
+                            Category:
+                            ${expense.category}
+                        </p>
+
+                        <p>
+                            Amount:
+                            ₹${Number(expense.amount).toFixed(2)}
+                        </p>
+
+                        <p>
+                            Date:
+                            ${expense.expense_date}
+                        </p>
+
+                        <p>
+                            Vendor:
+                            ${getVendorName(
+                                expense.vendor_id
+                            )}
+                        </p>
+
+                        <p>
+                            Payment:
+                            ${expense.payment_method}
+                        </p>
+
+                        <button
+                            onclick="editExpense(${expense.id})"
+                        >
+                            Edit
+                        </button>
+
+                        <button
+                            onclick="deleteExpense(${expense.id})"
+                        >
+                            Delete
+                        </button>
+
+                    </div>
+                `;
+            }
+        ).join("");
+}
+
+
+// =====================================================
+// EXPENSE CATEGORY FILTER
+// =====================================================
+
+const expenseFilterCategory =
+    document.getElementById(
+        "expense-filter-category"
+    );
+
+if (expenseFilterCategory) {
+
+    expenseFilterCategory.addEventListener(
+        "change",
+        function () {
+
+            displayExpenses(
+                currentExpenses
+            );
+        }
+    );
+}
+
+
+// =====================================================
+// CATEGORY METRIC DROPDOWN
+// =====================================================
+
+const metricCategorySelect =
+    document.getElementById(
+        "metric-category-select"
+    );
+
+if (metricCategorySelect) {
+
+    metricCategorySelect.addEventListener(
+        "change",
+        function () {
+
+            updateCategoryMetric();
+        }
+    );
+}
+
+
+// =====================================================
+// DELETE EXPENSE
+// =====================================================
 
 async function deleteExpense(expenseId) {
 
-    const token =
-        localStorage.getItem(AUTH_KEY);
+    const token = getToken();
 
     if (!token) {
+
         showLogin();
         return;
     }
+
 
     const confirmed =
         confirm(
             "Are you sure you want to delete this expense?"
         );
 
+
     if (!confirmed) {
         return;
     }
 
+
     try {
 
-        const response = await fetch(
-            `${API_BASE}/expenses/${expenseId}`,
-            {
-                method: "DELETE",
+        const response =
+            await fetch(
+                `${API_BASE}/expenses/${expenseId}`,
+                {
+                    method: "DELETE",
 
-                headers: {
-                    "Authorization":
-                        `Bearer ${token}`
+                    headers: {
+                        "Authorization":
+                            `Bearer ${token}`
+                    }
                 }
-            }
-        );
+            );
+
 
         const data =
             await response.json();
+
 
         if (!response.ok) {
 
@@ -368,6 +673,7 @@ async function deleteExpense(expenseId) {
 
             return;
         }
+
 
         await loadExpenses();
 
@@ -381,9 +687,9 @@ async function deleteExpense(expenseId) {
 }
 
 
-/* =========================
-   EDIT EXPENSE ELEMENTS
-========================= */
+// =====================================================
+// EDIT EXPENSE ELEMENTS
+// =====================================================
 
 const editExpenseSection =
     document.getElementById(
@@ -401,16 +707,16 @@ const cancelEdit =
     );
 
 
-/* =========================
-   EDIT EXPENSE
-========================= */
+// =====================================================
+// EDIT EXPENSE
+// =====================================================
 
 function editExpense(expenseId) {
 
-    const token =
-        localStorage.getItem(AUTH_KEY);
+    const token = getToken();
 
     if (!token) {
+
         showLogin();
         return;
     }
@@ -419,31 +725,33 @@ function editExpense(expenseId) {
 }
 
 
-/* =========================
-   LOAD EXPENSE FOR EDIT
-========================= */
+// =====================================================
+// LOAD EXPENSE FOR EDIT
+// =====================================================
 
 async function loadExpenseForEdit(expenseId) {
 
-    const token =
-        localStorage.getItem(AUTH_KEY);
+    const token = getToken();
 
     try {
 
-        const response = await fetch(
-            `${API_BASE}/expenses/${expenseId}`,
-            {
-                method: "GET",
+        const response =
+            await fetch(
+                `${API_BASE}/expenses/${expenseId}`,
+                {
+                    method: "GET",
 
-                headers: {
-                    "Authorization":
-                        `Bearer ${token}`
+                    headers: {
+                        "Authorization":
+                            `Bearer ${token}`
+                    }
                 }
-            }
-        );
+            );
+
 
         const expense =
             await response.json();
+
 
         if (!response.ok) {
 
@@ -468,10 +776,6 @@ async function loadExpenseForEdit(expenseId) {
             expense.expense_date;
 
 
-        /*
-         * Select category using category_id
-         */
-
         document.getElementById(
             "edit-expense-category"
         ).value =
@@ -485,31 +789,21 @@ async function loadExpenseForEdit(expenseId) {
 
 
         document.getElementById(
-            "edit-expense-amount"
-        ).value =
-            expense.amount;
-
-
-        document.getElementById(
             "edit-expense-vendor"
         ).value =
             expense.vendor_id || "";
 
 
-        /*
-         * Select payment method
-         */
+        document.getElementById(
+            "edit-expense-payment-method"
+        ).value =
+            expense.payment_method || "Cash";
 
-        const editPaymentMethod =
-            document.getElementById(
-                "edit-expense-payment-method"
-            );
 
-        if (editPaymentMethod) {
-
-            editPaymentMethod.value =
-                expense.payment_method || "Cash";
-        }
+        document.getElementById(
+            "edit-expense-amount"
+        ).value =
+            expense.amount;
 
 
         editExpenseSection.style.display =
@@ -530,9 +824,9 @@ async function loadExpenseForEdit(expenseId) {
 }
 
 
-/* =========================
-   UPDATE EXPENSE
-========================= */
+// =====================================================
+// UPDATE EXPENSE
+// =====================================================
 
 editExpenseForm.addEventListener(
     "submit",
@@ -540,8 +834,13 @@ editExpenseForm.addEventListener(
 
         event.preventDefault();
 
-        const token =
-            localStorage.getItem(AUTH_KEY);
+        const token = getToken();
+
+        if (!token) {
+
+            showLogin();
+            return;
+        }
 
 
         const expenseId =
@@ -550,15 +849,15 @@ editExpenseForm.addEventListener(
             ).value;
 
 
-        const vendorId =
-            document.getElementById(
-                "edit-expense-vendor"
-            ).value;
-
-
         const categoryId =
             document.getElementById(
                 "edit-expense-category"
+            ).value;
+
+
+        const vendorId =
+            document.getElementById(
+                "edit-expense-vendor"
             ).value;
 
 
@@ -578,37 +877,6 @@ editExpenseForm.addEventListener(
             );
 
 
-        /*
-         * Category must come from the
-         * selected category.
-         */
-
-        if (!categoryId || !selectedCategory) {
-
-            document.getElementById(
-                "edit-expense-message"
-            ).textContent =
-                "Please select a valid category.";
-
-            return;
-        }
-
-
-        /*
-         * Payment method must be selected.
-         */
-
-        if (!paymentMethod) {
-
-            document.getElementById(
-                "edit-expense-message"
-            ).textContent =
-                "Please select a payment method.";
-
-            return;
-        }
-
-
         const expenseData = {
 
             expense_date:
@@ -616,30 +884,27 @@ editExpenseForm.addEventListener(
                     "edit-expense-date"
                 ).value,
 
-
             category:
-                selectedCategory.name,
-
+                selectedCategory
+                    ? selectedCategory.name
+                    : "",
 
             category_id:
-                Number(categoryId),
-
+                categoryId
+                    ? Number(categoryId)
+                    : null,
 
             description:
                 document.getElementById(
                     "edit-expense-description"
                 ).value,
 
-
             vendor_id:
                 vendorId
                     ? Number(vendorId)
                     : null,
 
-
-            paid_to:
-                null,
-
+            paid_to: null,
 
             amount:
                 Number(
@@ -647,7 +912,6 @@ editExpenseForm.addEventListener(
                         "edit-expense-amount"
                     ).value
                 ),
-
 
             payment_method:
                 paymentMethod
@@ -663,7 +927,6 @@ editExpenseForm.addEventListener(
                         method: "PUT",
 
                         headers: {
-
                             "Content-Type":
                                 "application/json",
 
@@ -719,9 +982,9 @@ editExpenseForm.addEventListener(
 );
 
 
-/* =========================
-   CANCEL EDIT
-========================= */
+// =====================================================
+// CANCEL EDIT
+// =====================================================
 
 cancelEdit.addEventListener(
     "click",
@@ -733,24 +996,9 @@ cancelEdit.addEventListener(
 );
 
 
-/* =========================
-   LOGOUT
-========================= */
-
-logoutButton.addEventListener(
-    "click",
-    function () {
-
-        localStorage.removeItem(AUTH_KEY);
-
-        showLogin();
-    }
-);
-
-
-/* =========================
-   ADD EXPENSE ELEMENTS
-========================= */
+// =====================================================
+// ADD EXPENSE
+// =====================================================
 
 const expenseForm =
     document.getElementById(
@@ -763,34 +1011,30 @@ const expenseMessage =
     );
 
 
-/* =========================
-   ADD EXPENSE
-========================= */
-
 expenseForm.addEventListener(
     "submit",
     async function (event) {
 
         event.preventDefault();
 
-        const token =
-            localStorage.getItem(AUTH_KEY);
+        const token = getToken();
 
         if (!token) {
+
             showLogin();
             return;
         }
 
 
-        const vendorId =
-            document.getElementById(
-                "expense-vendor"
-            ).value;
-
-
         const categoryId =
             document.getElementById(
                 "expense-category"
+            ).value;
+
+
+        const vendorId =
+            document.getElementById(
+                "expense-vendor"
             ).value;
 
 
@@ -810,44 +1054,10 @@ expenseForm.addEventListener(
             );
 
 
-        /*
-         * Category validation
-         */
-
-        if (!categoryId || !selectedCategory) {
+        if (!selectedCategory) {
 
             expenseMessage.textContent =
-                "Please select a valid category.";
-
-            return;
-        }
-
-
-        /*
-         * Payment method validation
-         */
-
-        if (!paymentMethod) {
-
-            expenseMessage.textContent =
-                "Please select a payment method.";
-
-            return;
-        }
-
-
-        const amount =
-            Number(
-                document.getElementById(
-                    "expense-amount"
-                ).value
-            );
-
-
-        if (amount <= 0) {
-
-            expenseMessage.textContent =
-                "Amount must be greater than 0.";
+                "Please select a category.";
 
             return;
         }
@@ -860,34 +1070,30 @@ expenseForm.addEventListener(
                     "expense-date"
                 ).value,
 
-
             category:
                 selectedCategory.name,
 
-
             category_id:
                 Number(categoryId),
-
 
             description:
                 document.getElementById(
                     "expense-description"
                 ).value,
 
-
             vendor_id:
                 vendorId
                     ? Number(vendorId)
                     : null,
 
-
-            paid_to:
-                null,
-
+            paid_to: null,
 
             amount:
-                amount,
-
+                Number(
+                    document.getElementById(
+                        "expense-amount"
+                    ).value
+                ),
 
             payment_method:
                 paymentMethod
@@ -903,7 +1109,6 @@ expenseForm.addEventListener(
                         method: "POST",
 
                         headers: {
-
                             "Content-Type":
                                 "application/json",
 
@@ -940,20 +1145,6 @@ expenseForm.addEventListener(
             expenseForm.reset();
 
 
-            /*
-             * Restore default option
-             */
-
-            document.getElementById(
-                "expense-category"
-            ).value = "";
-
-
-            document.getElementById(
-                "expense-payment-method"
-            ).value = "";
-
-
             await loadExpenses();
 
 
@@ -966,9 +1157,9 @@ expenseForm.addEventListener(
 );
 
 
-/* =========================
-   VENDOR FORM
-========================= */
+// =====================================================
+// ADD VENDOR
+// =====================================================
 
 const vendorForm =
     document.getElementById(
@@ -987,10 +1178,10 @@ vendorForm.addEventListener(
 
         event.preventDefault();
 
-        const token =
-            localStorage.getItem(AUTH_KEY);
+        const token = getToken();
 
         if (!token) {
+
             showLogin();
             return;
         }
@@ -1003,12 +1194,10 @@ vendorForm.addEventListener(
                     "vendor-name"
                 ).value,
 
-
             phone:
                 document.getElementById(
                     "vendor-phone"
                 ).value || null,
-
 
             description:
                 document.getElementById(
@@ -1026,7 +1215,6 @@ vendorForm.addEventListener(
                         method: "POST",
 
                         headers: {
-
                             "Content-Type":
                                 "application/json",
 
@@ -1075,150 +1263,16 @@ vendorForm.addEventListener(
 );
 
 
-/* =========================
-   LOAD CATEGORIES
-========================= */
-
-async function loadCategories() {
-
-    const token =
-        localStorage.getItem(AUTH_KEY);
-
-    if (!token) {
-        showLogin();
-        return;
-    }
-
-
-    try {
-
-        const response =
-            await fetch(
-                `${API_BASE}/categories/`,
-                {
-                    method: "GET",
-
-                    headers: {
-                        "Authorization":
-                            `Bearer ${token}`
-                    }
-                }
-            );
-
-
-        if (response.status === 401) {
-
-            localStorage.removeItem(AUTH_KEY);
-
-            showLogin();
-
-            return;
-        }
-
-
-        if (!response.ok) {
-
-            console.error(
-                "Failed to load categories"
-            );
-
-            return;
-        }
-
-
-        const categories =
-            await response.json();
-
-
-        currentCategories =
-            categories;
-
-
-        const categorySelect =
-            document.getElementById(
-                "expense-category"
-            );
-
-
-        const editCategorySelect =
-            document.getElementById(
-                "edit-expense-category"
-            );
-
-
-        categorySelect.innerHTML =
-            '<option value="">Select Category</option>';
-
-
-        editCategorySelect.innerHTML =
-            '<option value="">Select Category</option>';
-
-
-        categories.forEach(
-            function (category) {
-
-                /*
-                 * Add category to Add Expense
-                 */
-
-                const option =
-                    document.createElement(
-                        "option"
-                    );
-
-                option.value =
-                    category.id;
-
-                option.textContent =
-                    category.name;
-
-                categorySelect.appendChild(
-                    option
-                );
-
-
-                /*
-                 * Add category to Edit Expense
-                 */
-
-                const editOption =
-                    document.createElement(
-                        "option"
-                    );
-
-                editOption.value =
-                    category.id;
-
-                editOption.textContent =
-                    category.name;
-
-                editCategorySelect.appendChild(
-                    editOption
-                );
-            }
-        );
-
-
-    } catch (error) {
-
-        console.error(
-            "Unable to load categories:",
-            error
-        );
-    }
-}
-
-
-/* =========================
-   LOAD VENDORS
-========================= */
+// =====================================================
+// LOAD VENDORS
+// =====================================================
 
 async function loadVendors() {
 
-    const token =
-        localStorage.getItem(AUTH_KEY);
+    const token = getToken();
 
     if (!token) {
+
         showLogin();
         return;
     }
@@ -1252,11 +1306,9 @@ async function loadVendors() {
 
         if (!response.ok) {
 
-            console.error(
-                "Failed to load vendors"
+            throw new Error(
+                "Unable to load vendors"
             );
-
-            return;
         }
 
 
@@ -1287,19 +1339,15 @@ async function loadVendors() {
 
 
         vendorSelect.innerHTML =
-            '<option value="">No Vendor</option>';
+            `<option value="">No Vendor</option>`;
 
 
         editVendorSelect.innerHTML =
-            '<option value="">No Vendor</option>';
+            `<option value="">No Vendor</option>`;
 
 
         vendors.forEach(
             function (vendor) {
-
-                /*
-                 * Add vendor to Add Expense
-                 */
 
                 const option =
                     document.createElement(
@@ -1316,10 +1364,6 @@ async function loadVendors() {
                     option
                 );
 
-
-                /*
-                 * Add vendor to Edit Expense
-                 */
 
                 const editOption =
                     document.createElement(
@@ -1366,8 +1410,7 @@ async function loadVendors() {
                             </p>
 
                             <p>
-                                ${vendor.description ||
-                                    ""}
+                                ${vendor.description || ""}
                             </p>
 
                             <button
@@ -1384,11 +1427,6 @@ async function loadVendors() {
 
     } catch (error) {
 
-        console.error(
-            "Unable to load vendors:",
-            error
-        );
-
         document.getElementById(
             "vendors-list"
         ).innerHTML =
@@ -1397,16 +1435,16 @@ async function loadVendors() {
 }
 
 
-/* =========================
-   DELETE VENDOR
-========================= */
+// =====================================================
+// DELETE VENDOR
+// =====================================================
 
 async function deleteVendor(vendorId) {
 
-    const token =
-        localStorage.getItem(AUTH_KEY);
+    const token = getToken();
 
     if (!token) {
+
         showLogin();
         return;
     }
@@ -1457,14 +1495,6 @@ async function deleteVendor(vendorId) {
         await loadVendors();
 
 
-        /*
-         * Refresh expenses because
-         * vendor information may have changed.
-         */
-
-        await loadExpenses();
-
-
     } catch (error) {
 
         alert(
@@ -1474,11 +1504,394 @@ async function deleteVendor(vendorId) {
 }
 
 
-/* =========================
-   INITIAL LOGIN CHECK
-========================= */
+// =====================================================
+// ADD CATEGORY
+// =====================================================
 
-if (localStorage.getItem(AUTH_KEY)) {
+const categoryForm =
+    document.getElementById(
+        "category-form"
+    );
+
+const categoryMessage =
+    document.getElementById(
+        "category-message"
+    );
+
+
+categoryForm.addEventListener(
+    "submit",
+    async function (event) {
+
+        event.preventDefault();
+
+        const token = getToken();
+
+        if (!token) {
+
+            showLogin();
+            return;
+        }
+
+
+        const categoryName =
+            document.getElementById(
+                "category-name"
+            ).value.trim();
+
+
+        if (!categoryName) {
+
+            categoryMessage.textContent =
+                "Please enter a category name.";
+
+            return;
+        }
+
+
+        const categoryData = {
+
+            name: categoryName
+        };
+
+
+        try {
+
+            const response =
+                await fetch(
+                    `${API_BASE}/categories/`,
+                    {
+                        method: "POST",
+
+                        headers: {
+                            "Content-Type":
+                                "application/json",
+
+                            "Authorization":
+                                `Bearer ${token}`
+                        },
+
+                        body:
+                            JSON.stringify(
+                                categoryData
+                            )
+                    }
+                );
+
+
+            const data =
+                await response.json();
+
+
+            if (!response.ok) {
+
+                categoryMessage.textContent =
+                    data.detail ||
+                    "Failed to add category";
+
+                return;
+            }
+
+
+            categoryMessage.textContent =
+                "Category added successfully.";
+
+
+            categoryForm.reset();
+
+
+            await loadCategories();
+
+
+        } catch (error) {
+
+            categoryMessage.textContent =
+                "Unable to connect to the server";
+        }
+    }
+);
+
+
+// =====================================================
+// LOAD CATEGORIES
+// =====================================================
+
+async function loadCategories() {
+
+    const token = getToken();
+
+    if (!token) {
+
+        showLogin();
+        return;
+    }
+
+
+    try {
+
+        const response =
+            await fetch(
+                `${API_BASE}/categories/`,
+                {
+                    method: "GET",
+
+                    headers: {
+                        "Authorization":
+                            `Bearer ${token}`
+                    }
+                }
+            );
+
+
+        if (response.status === 401) {
+
+            localStorage.removeItem(AUTH_KEY);
+
+            showLogin();
+
+            return;
+        }
+
+
+        if (!response.ok) {
+
+            throw new Error(
+                "Unable to load categories"
+            );
+        }
+
+
+        const categories =
+            await response.json();
+
+
+        currentCategories =
+            categories;
+
+
+        // ---------------------------------------------
+        // ADD EXPENSE CATEGORY
+        // ---------------------------------------------
+
+        const categorySelect =
+            document.getElementById(
+                "expense-category"
+            );
+
+
+        categorySelect.innerHTML =
+            `<option value="">
+                Select Category
+            </option>`;
+
+
+        categories.forEach(
+            function (category) {
+
+                const option =
+                    document.createElement(
+                        "option"
+                    );
+
+                option.value =
+                    category.id;
+
+                option.textContent =
+                    category.name;
+
+                categorySelect.appendChild(
+                    option
+                );
+            }
+        );
+
+
+        // ---------------------------------------------
+        // EDIT EXPENSE CATEGORY
+        // ---------------------------------------------
+
+        const editCategorySelect =
+            document.getElementById(
+                "edit-expense-category"
+            );
+
+
+        editCategorySelect.innerHTML =
+            `<option value="">
+                Select Category
+            </option>`;
+
+
+        categories.forEach(
+            function (category) {
+
+                const option =
+                    document.createElement(
+                        "option"
+                    );
+
+                option.value =
+                    category.id;
+
+                option.textContent =
+                    category.name;
+
+                editCategorySelect.appendChild(
+                    option
+                );
+            }
+        );
+
+
+        // ---------------------------------------------
+        // METRIC CATEGORY DROPDOWN
+        // ---------------------------------------------
+
+        const metricCategorySelect =
+            document.getElementById(
+                "metric-category-select"
+            );
+
+
+        const previousMetricValue =
+            metricCategorySelect.value;
+
+
+        metricCategorySelect.innerHTML =
+            `<option value="">
+                Select Category
+            </option>`;
+
+
+        categories.forEach(
+            function (category) {
+
+                const option =
+                    document.createElement(
+                        "option"
+                    );
+
+                option.value =
+                    category.id;
+
+                option.textContent =
+                    category.name;
+
+                metricCategorySelect.appendChild(
+                    option
+                );
+            }
+        );
+
+
+        // Keep previous selection if possible
+        if (
+            previousMetricValue &&
+            categories.some(
+                function (category) {
+                    return String(category.id) ===
+                        String(previousMetricValue);
+                }
+            )
+        ) {
+
+            metricCategorySelect.value =
+                previousMetricValue;
+        }
+
+
+        // ---------------------------------------------
+        // EXPENSE FILTER CATEGORY
+        // ---------------------------------------------
+
+        const expenseFilterCategory =
+            document.getElementById(
+                "expense-filter-category"
+            );
+
+
+        const previousFilterValue =
+            expenseFilterCategory.value;
+
+
+        expenseFilterCategory.innerHTML =
+            `<option value="">
+                All Categories
+            </option>`;
+
+
+        categories.forEach(
+            function (category) {
+
+                const option =
+                    document.createElement(
+                        "option"
+                    );
+
+                option.value =
+                    category.id;
+
+                option.textContent =
+                    category.name;
+
+                expenseFilterCategory.appendChild(
+                    option
+                );
+            }
+        );
+
+
+        if (
+            previousFilterValue &&
+            categories.some(
+                function (category) {
+                    return String(category.id) ===
+                        String(previousFilterValue);
+                }
+            )
+        ) {
+
+            expenseFilterCategory.value =
+                previousFilterValue;
+        }
+
+
+        // Recalculate category metric
+        updateCategoryMetric();
+
+
+    } catch (error) {
+
+        console.error(
+            "Unable to load categories:",
+            error
+        );
+    }
+}
+
+
+// =====================================================
+// LOGOUT
+// =====================================================
+
+logoutButton.addEventListener(
+    "click",
+    function () {
+
+        localStorage.removeItem(
+            AUTH_KEY
+        );
+
+        showLogin();
+    }
+);
+
+
+// =====================================================
+// INITIAL LOGIN CHECK
+// =====================================================
+
+if (getToken()) {
 
     showDashboard();
 

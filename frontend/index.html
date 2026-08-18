@@ -1,9 +1,12 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
     <title>BuildLedger</title>
+
     <link rel="stylesheet" href="style.css">
 </head>
 
@@ -11,10 +14,17 @@
 
     <h1>BuildLedger</h1>
 
-    <div id="login-section">
+
+    <!-- =========================
+         LOGIN
+    ========================== -->
+
+    <div id="login-section" class="login-section">
+
         <h2>Login</h2>
 
         <form id="login-form">
+
             <input
                 type="email"
                 id="login-email"
@@ -29,115 +39,371 @@
                 required
             >
 
-            <button type="submit">Login</button>
+            <button type="submit">
+                Login
+            </button>
+
         </form>
 
         <p id="login-message"></p>
+
     </div>
+
+
+    <!-- =========================
+         DASHBOARD
+    ========================== -->
 
     <div id="dashboard" style="display: none;">
 
-        <h2>Dashboard</h2>
+        <div class="dashboard-header">
 
-        <button id="logout-button">Logout</button>
+            <h2>Dashboard</h2>
+
+            <button id="logout-button">
+                Logout
+            </button>
+
+        </div>
+
+
+        <!-- =========================
+             METRICS
+        ========================== -->
+
+        <section class="metrics-section">
+
+            <h3>Overview</h3>
+
+            <div class="metrics-grid">
+
+                <div class="metric-card">
+
+                    <span>Total Amount Till Date</span>
+
+                    <strong>
+                        ₹<span id="metric-total-amount">0.00</span>
+                    </strong>
+
+                </div>
+
+
+                <div class="metric-card">
+
+                    <span>Total PhonePe</span>
+
+                    <strong>
+                        ₹<span id="metric-phonepe">0.00</span>
+                    </strong>
+
+                </div>
+
+
+                <div class="metric-card">
+
+                    <span>Total Cash</span>
+
+                    <strong>
+                        ₹<span id="metric-cash">0.00</span>
+                    </strong>
+
+                </div>
+
+
+                <div class="metric-card">
+
+                    <span>Total Pending</span>
+
+                    <strong>
+                        ₹<span id="metric-pending">0.00</span>
+                    </strong>
+
+                </div>
+
+
+                <div class="metric-card">
+
+                    <span>Total Petrol</span>
+
+                    <strong>
+                        ₹<span id="metric-petrol">0.00</span>
+                    </strong>
+
+                </div>
+
+
+                <div class="metric-card category-metric">
+
+                    <span>Category Total</span>
+
+                    <select id="metric-category-select">
+
+                        <option value="">
+                            Select Category
+                        </option>
+
+                    </select>
+
+                    <strong>
+                        ₹<span id="metric-category-total">0.00</span>
+                    </strong>
+
+                </div>
+
+            </div>
+
+        </section>
+
 
         <hr>
 
-        <h3>Add Vendor</h3>
 
-        <form id="vendor-form">
+        <!-- =========================
+             VENDOR + CATEGORY
+        ========================== -->
 
-            <input
-                type="text"
-                id="vendor-name"
-                placeholder="Vendor / Person Name"
-                required
-            >
+        <section class="management-row">
 
-            <input
-                type="text"
-                id="vendor-phone"
-                placeholder="Phone"
-            >
 
-            <input
-                type="text"
-                id="vendor-description"
-                placeholder="Description"
-            >
+            <!-- ADD VENDOR -->
 
-            <button type="submit">Add Vendor</button>
+            <div class="management-card">
 
-        </form>
+                <h3>Add Vendor</h3>
 
-        <p id="vendor-message"></p>
+                <form id="vendor-form">
 
-        <h3>Vendors</h3>
+                    <input
+                        type="text"
+                        id="vendor-name"
+                        placeholder="Vendor / Person Name"
+                        required
+                    >
 
-        <div id="vendors-list"></div>
-        
-        <h3>Add Expense</h3>
+                    <input
+                        type="text"
+                        id="vendor-phone"
+                        placeholder="Phone"
+                    >
 
-        <form id="expense-form">
+                    <input
+                        type="text"
+                        id="vendor-description"
+                        placeholder="Description"
+                    >
 
-            <input
-                type="date"
-                id="expense-date"
-                required
-            >
+                    <button type="submit">
+                        Add Vendor
+                    </button>
 
-            <select id="expense-category" required>
-                <option value="">Select Category</option>
-            </select>
+                </form>
 
-            <input
-                type="text"
-                id="expense-description"
-                placeholder="Description"
-                required
-            >
+                <p id="vendor-message"></p>
 
-            <select id="expense-vendor">
-                <option value="">No Vendor</option>
-            </select>
+            </div>
 
-            <select id="expense-payment-method" required>
-                <option value="">Select Payment Method</option>
-                <option value="Cash">Cash</option>
-                <option value="PhonePe">PhonePe</option>
-                <option value="Pending">Pending</option>
-            </select>
 
-            <input
-                type="number"
-                id="expense-amount"
-                placeholder="Amount"
-                step="0.01"
-                required
-            >
+            <!-- ADD CATEGORY -->
 
-            <button type="submit">Add Expense</button>
+            <div class="management-card">
 
-        </form>
+                <h3>Add Category</h3>
 
-        <p id="expense-message"></p>
+                <form id="category-form">
 
-        <h3>Expenses</h3>
+                    <input
+                        type="text"
+                        id="category-name"
+                        placeholder="Category Name"
+                        required
+                    >
 
-        <div id="expense-summary">
-            <p>Total Expenses: ₹<span id="total-expenses">0</span></p>
-            <p>Number of Expenses: <span id="expense-count">0</span></p>
-        </div>
-        
-        <div id="expenses-list"></div>
+                    <button type="submit">
+                        Add Category
+                    </button>
 
-        <div id="edit-expense-section" style="display: none;">
+                </form>
+
+                <p id="category-message"></p>
+
+            </div>
+
+        </section>
+
+
+        <!-- =========================
+             VENDORS
+        ========================== -->
+
+        <section class="vendors-section">
+
+            <h3>Vendors</h3>
+
+            <div id="vendors-list"></div>
+
+        </section>
+
+
+        <hr>
+
+
+        <!-- =========================
+             ADD EXPENSE + EXPENSE LIST
+        ========================== -->
+
+        <section class="expense-row">
+
+
+            <!-- ADD EXPENSE -->
+
+            <div class="expense-form-card">
+
+                <h3>Add Expense</h3>
+
+                <form id="expense-form">
+
+                    <input
+                        type="date"
+                        id="expense-date"
+                        required
+                    >
+
+
+                    <select
+                        id="expense-category"
+                        required
+                    >
+
+                        <option value="">
+                            Select Category
+                        </option>
+
+                    </select>
+
+
+                    <input
+                        type="text"
+                        id="expense-description"
+                        placeholder="Description"
+                        required
+                    >
+
+
+                    <select id="expense-vendor">
+
+                        <option value="">
+                            No Vendor
+                        </option>
+
+                    </select>
+
+
+                    <select
+                        id="expense-payment-method"
+                        required
+                    >
+
+                        <option value="">
+                            Select Payment Method
+                        </option>
+
+                        <option value="Cash">
+                            Cash
+                        </option>
+
+                        <option value="PhonePe">
+                            PhonePe
+                        </option>
+
+                        <option value="Pending">
+                            Pending
+                        </option>
+
+                    </select>
+
+
+                    <input
+                        type="number"
+                        id="expense-amount"
+                        placeholder="Amount"
+                        step="0.01"
+                        min="0.01"
+                        required
+                    >
+
+
+                    <button type="submit">
+                        Add Expense
+                    </button>
+
+                </form>
+
+                <p id="expense-message"></p>
+
+            </div>
+
+
+            <!-- EXPENSE LIST -->
+
+            <div class="expense-list-card">
+
+                <div class="expense-list-header">
+
+                    <h3>Expenses</h3>
+
+                    <select id="expense-filter-category">
+
+                        <option value="">
+                            All Categories
+                        </option>
+
+                    </select>
+
+                </div>
+
+
+                <div id="expense-summary">
+
+                    <p>
+                        Total Expenses:
+                        ₹<span id="total-expenses">0.00</span>
+                    </p>
+
+                    <p>
+                        Number of Expenses:
+                        <span id="expense-count">0</span>
+                    </p>
+
+                </div>
+
+
+                <div id="expenses-list"></div>
+
+            </div>
+
+        </section>
+
+
+        <!-- =========================
+             EDIT EXPENSE
+        ========================== -->
+
+        <section
+            id="edit-expense-section"
+            class="edit-expense-section"
+            style="display: none;"
+        >
 
             <h3>Edit Expense</h3>
 
+
             <form id="edit-expense-form">
 
-                <input type="hidden" id="edit-expense-id">
+                <input
+                    type="hidden"
+                    id="edit-expense-id"
+                >
+
 
                 <input
                     type="date"
@@ -145,9 +411,18 @@
                     required
                 >
 
-                <select id="edit-expense-category" required>
-                    <option value="">Select Category</option>
+
+                <select
+                    id="edit-expense-category"
+                    required
+                >
+
+                    <option value="">
+                        Select Category
+                    </option>
+
                 </select>
+
 
                 <input
                     type="text"
@@ -156,39 +431,77 @@
                     required
                 >
 
+
                 <select id="edit-expense-vendor">
-                    <option value="">No Vendor</option>
+
+                    <option value="">
+                        No Vendor
+                    </option>
+
                 </select>
 
-                <select id="edit-expense-payment-method" required>
-                    <option value="">Select Payment Method</option>
-                    <option value="Cash">Cash</option>
-                    <option value="PhonePe">PhonePe</option>
-                    <option value="Pending">Pending</option>
+
+                <select
+                    id="edit-expense-payment-method"
+                    required
+                >
+
+                    <option value="">
+                        Select Payment Method
+                    </option>
+
+                    <option value="Cash">
+                        Cash
+                    </option>
+
+                    <option value="PhonePe">
+                        PhonePe
+                    </option>
+
+                    <option value="Pending">
+                        Pending
+                    </option>
+
                 </select>
+
 
                 <input
                     type="number"
                     id="edit-expense-amount"
                     placeholder="Amount"
                     step="0.01"
+                    min="0.01"
                     required
                 >
 
-                <button type="submit">Update Expense</button>
 
-                <button type="button" id="cancel-edit">
-                    Cancel
-                </button>
+                <div class="edit-buttons">
+
+                    <button type="submit">
+                        Update Expense
+                    </button>
+
+                    <button
+                        type="button"
+                        id="cancel-edit"
+                    >
+                        Cancel
+                    </button>
+
+                </div>
 
             </form>
 
+
             <p id="edit-expense-message"></p>
 
-        </div>
+        </section>
+
     </div>
+
 
     <script src="app.js"></script>
 
 </body>
+
 </html>
