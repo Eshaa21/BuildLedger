@@ -1,4 +1,7 @@
 from fastapi import Depends, FastAPI
+from fastapi.responses import FileResponse
+from fastapi.staticfiles import StaticFiles
+from pathlib import Path
 from sqlalchemy import text
 from fastapi.middleware.cors import CORSMiddleware
 from backend.database import Base, engine
@@ -41,9 +44,9 @@ def get_me(
 
 @app.get("/")
 def root():
-    return {
-        "message": "BuildLedger API is running"
-    }
+    return FileResponse(
+        Path(__file__).resolve().parent.parent / "frontend" / "index.html"
+    )
 
 
 @app.get("/health")
@@ -63,3 +66,11 @@ def health_check():
             "database": "connection failed",
             "error": str(e)
         }
+
+app.mount(
+    "/",
+    StaticFiles(
+        directory=Path(__file__).resolve().parent.parent / "frontend"
+    ),
+    name="frontend"
+)
